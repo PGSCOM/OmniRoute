@@ -1,0 +1,76 @@
+# Fork-only: keeps the `integration` branch up to date by merging the newest upstream
+# release/v* branch and the fork's feature branches into it. Not meant for upstream.
+#
+# Merges that touch .github/workflows/ can only be pushed with a token that has the
+# `workflow` permission, which GITHUB_TOKEN never has: store a fine-grained PAT
+# (this repo: Contents + Workflows read/write) as the SYNC_TOKEN secret.
+name: Sync integration branch
+
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+    inputs:
+      base:
+        description: "Upstream branch to merge (empty: newest release/v*)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fork-sync-integration
+  cancel-in-progress: false
+
+env:
+  UPSTREAM: https://github.com/cheaper-inference/OmniRoute.git
+  TARGET: integration
+  # Merged in this order. A branch that no longer exists (deleted after its PR merged) is skipped.
+  FEATURE_BRANCHES: >-
+    fix/dispatcher-max-header-size
+    feat/gemini-web-attachments
+    feat/gemini-web-hydrogen-models
+
+jobs:
+  sync:
+    if: github.repository != 'cheaper-inference/OmniRoute'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ env.TARGET }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Merge upstream release and feature branches
+        env:
+          BASE_INPUT: ${{ inputs.base }}
+          PUSH_TOKEN: ${{ secrets.SYNC_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream "$UPSTREAM"
+
+          base="$BASE_INPUT"
+          if [ -z "$base" ]; then
+            base=$(git ls-remote --heads upstream 'refs/heads/release/v*' \
+              | sed 's#.*refs/heads/##' | sort -V | tail -1)
+          fi
+          echo "Upstream base: $base"
+          git fetch --no-tags upstream "refs/heads/$base:refs/remotes/upstream/$base"
+          git merge --no-edit "upstream/$base"
+
+          for b in $FEATURE_BRANCHES; do
+            if git ls-remote --exit-code --heads origin "$b" >/dev/null; then
+              git fetch --no-tags origin "refs/heads/$b:refs/remotes/origin/$b"
+              git merge --no-edit "origin/$b"
+            else
+              echo "Skipping $b (branch not found)"
+            fi
+          done
+
+          git push "https://x-access-token:${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            "HEAD:refs/heads/$TARGET"
