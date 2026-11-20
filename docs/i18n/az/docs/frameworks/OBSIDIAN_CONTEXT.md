@@ -34,88 +34,65 @@ Klient (`src/lib/obsidian/api.ts`) Local REST API-ni aşağıdakı imkanlarla ə
 
 ## Quraşdırma
 
-Obsidian tokeni və ya baza URL-i üçün **heç bir mühit dəyişəni yoxdur** — hər ikisi
-`src/lib/db/obsidian.ts` vasitəsilə SQLite `key_value` cədvəlində (`obsidian` ad fəzasında)
-saxlanılır. Token **saxlanma zamanı şifrələnir** (AES-256-GCM, açıq mətnlə geriyə uyğunluq
-ehtiyat mexanizmi ilə). Endpoint idarəetmə panelinin **Context Sources** vərəqindən
-(`ObsidianSourceCard`) və ya parametrlər REST API-si vasitəsilə konfiqurasiya edin.
+var** mühit dəyişkənliyi yoxdur** Obsidian nişanı və ya URL — bazası üçün hər ikisi `src/lib/db/obsidian.ts` vasitəsilə SQLite `key_value` cədvəlində (ad sahəsi `obsidian`) saxlanılır. Nişandır** istirahətdə şifrələnir** (AES-256-GCM, düz mətn geriyə uyğun bərpa ilə). -dən konfiqurasiya edin** Kontekst mənbələri** Son nöqtə tablosunun nişanı (`ObsidianSourceCard`) və ya REST API parametrləri vasitəsilə.
 
 > [!IMPORTANT]
-> **Obsidian Local REST API** plagini quraşdırılmış və işlək olmalıdır. Onun REST
-> interfeysi **HTTP `127.0.0.1:27123`** ünvanını dinləyir (standart baza URL-i). `27124`
-> portu _ayrıca_ MCP/HTTPS son nöqtəsidir və parametrlər marşrutu tərəfindən açıq şəkildə rədd edilir.
-> Başqa cihazdan qoşularkən `http://<tailscale-ip>:27123` ünvanından istifadə edin.
+> The**Obsidian Yerli REST API** plagin quraşdırılmalı və işləməlidir. Onun REST interfeysi dinləyir**HTTP `127.0.0.1:27123`** (standart baza URL). Port `27124` _separate_ MCP/HTTPS son nöqtəsidir və parametrlər marşrutu tərəfindən açıq şəkildə rədd edilir. Başqa cihazdan qoşulursanız, `http://<tailscale-ip>:27123` istifadə edin.
 
-### Konfiqurasiya açarları (SQLite `key_value`, `obsidian` ad fəzası)
+### Konfiqurasiya açarları (SQLite `key_value`, ad sahəsi `obsidian`)
 
-| Açar              | Məqsəd                                                    | Şifrələnib |
-| ----------------- | --------------------------------------------------------- | ---------- |
-| `api_key`         | Local REST API daşıyıcı tokeni                            | bəli       |
-| `base_url`        | REST baza URL-i (standart `http://127.0.0.1:27123`)       | xeyr       |
-| `vault_path`      | Kassa qovluğuna mütləq yol (sinxronizasiya üçün)          | xeyr       |
-| `webdav_username` | Yaradılmış WebDAV istifadəçi adı (kassa sinxronizasiyası) | xeyr       |
-| `webdav_password` | Yaradılmış WebDAV parolu (kassa sinxronizasiyası)         | bəli       |
-| `webdav_enabled`  | WebDAV kassa sinxronizasiyasının aktiv olub-olmaması      | xeyr       |
+| Açar              | Məqsəd                                               | Şifrələnmiş |
+| ----------------- | ---------------------------------------------------- | ----------- |
+| `api_key`         | Yerli REST API daşıyıcısı nişanı                     | bəli        |
+| `base_url`        | REST bazası URL (defolt `http://127.0.0.1:27123`)    | yox         |
+| `vault_path`      | Kassa qovluğuna mütləq yol (sinxronizasiya üçün)     | yox         |
+| `webdav_username` | Yaradılmış WebDAV istifadəçi adı (vault sync)        | yox         |
+| `webdav_password` | Yaradılmış WebDAV parolu (vault sync)                | bəli        |
+| `webdav_enabled`  | WebDAV vault sinxronizasiyasının aktiv olub-olmaması | yox         |
 
-### REST vasitəsilə konfiqurasiya
+### REST vasitəsilə konfiqurasiya edin
 
 ```bash
-# Local REST API tokenini yadda saxlayın və doğrulayın (POST status yoxlaması ilə doğrulayır)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# Bağlantı statusunu yoxlayın (connected, hasToken, baseUrl, vaultPath qaytarır)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# Bağlantını kəsin (saxlanmış tokeni təmizləyir)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-Bütün metodlar idarəetmə paneli autentifikasiyasını tələb edir. `POST`, `27124`
-portundakı istənilən URL-i rədd edir və tokeni saxlamazdan əvvəl Local REST API status
-son nöqtəsini çağıraraq doğrulayır.
+Bütün üsullar tablosunun autentifikasiyasını tələb edir. `POST` `27124` portunda hər hansı URL rədd edir və davam etməzdən əvvəl Yerli REST API statusunun son nöqtəsinə zəng edərək nişanı təsdiqləyir.
 
-### WebDAV kassa sinxronizasiyası
+### WebDAV vault sinxronizasiyası
 
-`src/app/api/settings/obsidian/webdav/route.ts`, `src/lib/obsidianSync.ts` tərəfindən
-idarə olunan, WebDAV əsaslı istəyə bağlı kassa sinxronizasiyasını idarə edir. Onun
-aktivləşdirilməsi OmniRoute-u lokal kassa qovluğuna yönəldir və təsadüfi WebDAV
-istifadəçi adı/parol cütü yaradır:
+`src/app/api/settings/obsidian/webdav/route.ts` isteğe bağlı WebDAV tərəfindən dəstəklənən kassa sinxronizasiyasını idarə edir ( `src/lib/obsidianSync.ts` tərəfindən idarə olunur). Onun işə salınması OmniRoute ni yerli kassa kataloqunda göstərir və təsadüfi WebDAV username/password cütünü vurur:
 
 ```bash
-# Kassa qovluğu üçün WebDAV sinxronizasiyasını aktivləşdirin (istifadəçi adı/parol yaradır)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# WebDAV sinxronizasiya statusunu əldə edin (identifikasiya məlumatları yalnız aktiv olduqda qaytarılır)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# WebDAV sinxronizasiyasını deaktiv edin (identifikasiya məlumatlarını və idarə olunan .stignore faylını təmizləyir)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
-### Hər API açarı üzrə kontekst mənbəyi (istəyə bağlı)
+### Təhlükəsizlik və Nəqliyyat
 
-Obsidian konfiqurasiyası `api_key_context_sources` cədvəli
-(`src/lib/db/apiKeyContextSources.ts`) vasitəsilə **hər API açarı üzrə** əhatələndirilə
-bilər. MCP çağırışı autentifikasiya edilmiş API açarı identifikatoru daşıdıqda,
-`getObsidianConfigForApiKey()` həmin açarın öz tokeninə/baza URL-inə/kassa yoluna
-(`source: "api_key"`) üstünlük verir, əks halda isə qlobal konfiqurasiyaya
-(`source: "global"`) geri qayıdır.
+WebDAV autentifikasiyası hər IP xətasının izlənilməsini və kilidlənməsini tətbiq edir (60 saniyəlik pəncərədə 10 uğursuz cəhd `429 Too Many Requests` və `Retry-After` ilə 5 dəqiqəlik blokadaya səbəb olur). WebDAV Əsas autentifikasiya etimadnaməsini ötürdüyünə görə, geri döngədən kənar WebDAV son nöqtəsinə daxil olarkən TLS dayandırılması (və ya Tailscale və ya Cloudflare Tuneli kimi təhlükəsiz tunel üzərindən marşrutlaşdırma) şiddətlə tövsiyə olunur.
 
-Sinxronizasiya ilə bağlı olmayan MCP alətləri bu konfiqurasiyanı oxumazdan əvvəl
-çağıranın müəyyən edilmiş identikliyini tələb edir. İdentikliyi olmayan çağıran
-`Obsidian API token not configured` mesajını alır və kassaya heç bir sorğu göndərilmir.
-HTTP çağıranları öz sorğu identifikasiya məlumatları vasitəsilə müəyyən edilir; stdio
-çağıranları isə `OMNIROUTE_API_KEY` və ya `ROUTER_API_KEY` vasitəsilə müəyyən edilə bilər.
-Müəyyən edilməmiş HTTP çağıranı serverin mühit identikliyini miras ala bilməz. Təkcə
-doldurucu identifikatorlar giriş icazəsi vermir; `env-key` ilə əlaqələndirilən etibarlı
-mühit identifikasiya məlumatı dəstəklənməyə davam edir. Hər açar üzrə Obsidian
-konfiqurasiyası olmayan autentifikasiya edilmiş açarlar qlobal ehtiyat variantını
-saxlayır. Dörd `obsidian_sync_*` aləti öz ayrıca sinxronizasiya tokeni davranışını
-qoruyur.
+### Hər API açarı üçün kontekst mənbəyi (isteğe bağlı)
+
+Obsidian konfiqurasiyası əhatə oluna bilər** API açarı üçün** `api_key_context_sources` cədvəli (`src/lib/db/apiKeyContextSources.ts`) vasitəsilə. MCP zəngi təsdiqlənmiş API açar identifikatorunu daşıdıqda, `getObsidianConfigForApiKey()` həmin açarın öz token/base-URL/vault-path (`source: "api_key"`) üstünlük verir və əks halda qlobal konfiquraya (`source: "global"`) qayıdır.
+
+Sinxronlaşdırılmayan MCP alətləri bu konfiqurasiyanı oxumazdan əvvəl həll edilmiş zəng edən şəxsin kimliyini tələb edir. Şəxsiyyəti olmayan zəng edən şəxs `Obsidian API token not configured` alır və heç bir vault sorğusu göndərilmir. HTTP zəng edənlər sorğu etimadnamələri vasitəsilə həll edirlər; stdio zəng edənlər `OMNIROUTE_API_KEY` və ya `ROUTER_API_KEY` vasitəsilə həll edə bilərlər. Həll edilməmiş HTTP zəng edən şəxs serverin mühit şəxsiyyətini miras ala bilməz. Yertutan IDs tək giriş icazəsi vermir; `env-key` a cavab verən etibarlı mühit etimadnaməsi dəstəklənir. Hər açar Obsidian konfiqurasiyası olmayan təsdiqlənmiş açarlar qlobal ehtiyatı saxlayır. Dörd `obsidian_sync_*` aləti ayrı-ayrı sinxronizasiya işarəsi davranışını saxlayır.
 
 ## MCP alətləri (22)
 

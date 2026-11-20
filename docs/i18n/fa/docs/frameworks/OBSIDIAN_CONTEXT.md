@@ -30,89 +30,67 @@ OmniRoute به یک مخزن **Obsidian** بهعنوان **منبع زمینه**
   را توضیح میدهد (HTTP روی `27123`، **نه** نقطهٔ پایانی MCP روی `27124`) و قالب Tailscale را ذکر میکند.
 - **کدگذاری مسیر** نسبت به ریشهٔ مخزن، تا مسیر یادداشتهایی که فاصله یا اسلش دارند ایمن باشند.
 
-## راهاندازی
+## راه اندازی
 
-برای توکن Obsidian یا URL پایه **هیچ متغیر محیطیای وجود ندارد** — هر دو از طریق
-`src/lib/db/obsidian.ts` در جدول SQLite با نام `key_value` (در فضای نام `obsidian`)
-ذخیره میشوند. توکن **در حالت ذخیرهشده رمزگذاری میشود** (AES-256-GCM، همراه با
-روش جایگزین سازگار با نسخههای قبلی برای متن ساده). آن را از زبانهٔ **Context Sources**
-در داشبورد Endpoint (`ObsidianSourceCard`) یا از طریق REST API تنظیمات پیکربندی کنید.
+وجود دارد** بدون متغیر محیطی** برای رمز Obsidian یا پایه URL — هر دو در جدول SQLite `key_value` ( فضای نام `obsidian`) از طریق `src/lib/db/obsidian.ts` ذخیره می شوند. نشانه است** در حالت استراحت رمزگذاری شده است** (AES-256-GCM، با متن ساده backward-compat backback). پیکربندی از** منابع زمینه** برگه داشبورد Endpoint (`ObsidianSourceCard`)، یا از طریق تنظیمات REST API.
 
 > [!IMPORTANT]
-> افزونهٔ **Obsidian Local REST API** باید نصب و در حال اجرا باشد. رابط REST آن روی
-> **HTTP `127.0.0.1:27123`** (URL پایهٔ پیشفرض) گوش میدهد. پورت `27124` یک نقطهٔ
-> پایانی _مجزای_ MCP/HTTPS است و مسیر تنظیمات صراحتاً آن را رد میکند.
-> در صورت اتصال از دستگاهی دیگر، از `http://<tailscale-ip>:27123` استفاده کنید.
+> را**Obsidian محلی REST API** افزونه باید نصب و اجرا شود. رابط REST آن گوش می دهد**HTTP `127.0.0.1:27123`** (پایه پیش فرض URL). Port `27124` یک نقطه پایانی _separate_ MCP/HTTPS است و به صراحت توسط مسیر تنظیمات رد می شود. در صورت اتصال از دستگاه دیگری، از `http://<tailscale-ip>:27123` استفاده کنید.
 
 ### کلیدهای پیکربندی (SQLite `key_value`، فضای نام `obsidian`)
 
-| کلید              | کاربرد                                           | رمزگذاریشده |
-| ----------------- | ------------------------------------------------ | ----------- |
-| `api_key`         | توکن bearer مربوط به Local REST API              | بله         |
-| `base_url`        | URL پایهٔ REST (پیشفرض `http://127.0.0.1:27123`) | خیر         |
-| `vault_path`      | مسیر مطلق پوشهٔ vault (برای همگامسازی)           | خیر         |
-| `webdav_username` | نام کاربری WebDAV تولیدشده (همگامسازی vault)     | خیر         |
-| `webdav_password` | گذرواژهٔ WebDAV تولیدشده (همگامسازی vault)       | بله         |
-| `webdav_enabled`  | فعال بودن یا نبودن همگامسازی vault با WebDAV     | خیر         |
+| کلید              | هدف                                             | رمزگذاری شده است |
+| ----------------- | ----------------------------------------------- | ---------------- |
+| `api_key`         | توکن حامل REST API محلی                         | بله              |
+| `base_url`        | REST پایه URL (پیشفرض `http://127.0.0.1:27123`) | نه               |
+| `vault_path`      | مسیر مطلق به دایرکتوری vault (برای همگام سازی)  | نه               |
+| `webdav_username` | نام کاربری WebDAV ایجاد شده (همگام سازی طاق)    | نه               |
+| `webdav_password` | رمز عبور WebDAV ایجاد شده (همگام سازی خزانه)    | بله              |
+| `webdav_enabled`  | آیا همگام سازی WebDAV vault فعال است یا خیر     | نه               |
 
-### پیکربندی از طریق REST
+### از طریق REST پیکربندی کنید
 
 ```bash
-# ذخیره و اعتبارسنجی توکن Local REST API (درخواست POST با بررسی وضعیت اعتبارسنجی میکند)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# بررسی وضعیت اتصال (مقادیر connected، hasToken، baseUrl و vaultPath را برمیگرداند)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# قطع اتصال (توکن ذخیرهشده را پاک میکند)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-همهٔ متدها به احراز هویت داشبورد نیاز دارند. `POST` هر URL روی پورت `27124` را رد
-میکند و پیش از ذخیرهسازی، توکن را با فراخوانی نقطهٔ پایانی وضعیت Local REST API
-اعتبارسنجی میکند.
+همه روش ها نیاز به احراز هویت داشبورد دارند. `POST` هر URL را در پورت `27124` رد می کند و با فراخوانی نقطه پایانی وضعیت REST محلی API قبل از تداوم، توکن را تأیید می کند.
 
-### همگامسازی vault با WebDAV
+### همگام سازی طاق WebDAV
 
-`src/app/api/settings/obsidian/webdav/route.ts` همگامسازی اختیاری vault مبتنی بر
-WebDAV را مدیریت میکند (با هدایت `src/lib/obsidianSync.ts`). فعالسازی آن، OmniRoute
-را به یک پوشهٔ محلی vault متصل میکند و یک جفت نام کاربری/گذرواژهٔ تصادفی WebDAV
-میسازد:
+`src/app/api/settings/obsidian/webdav/route.ts` یک همگام سازی خزانه اختیاری با پشتیبانی WebDAV (که توسط `src/lib/obsidianSync.ts` هدایت می شود) را مدیریت می کند. با فعال کردن آن، OmniRoute را به یک فهرست محلی خزانه هدایت می کند و یک جفت WebDAV username/password تصادفی ایجاد می کند:
 
 ```bash
-# فعالسازی همگامسازی WebDAV برای یک پوشهٔ vault (نام کاربری/گذرواژه ایجاد میکند)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# دریافت وضعیت همگامسازی WebDAV (اعتبارنامهها فقط در حالت فعال برگردانده میشوند)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# غیرفعالسازی همگامسازی WebDAV (اعتبارنامهها و فایل مدیریتشدهٔ .stignore را پاک میکند)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
-### منبع زمینهٔ اختصاصی برای هر کلید API (اختیاری)
+### امنیت و حمل و نقل
 
-پیکربندی Obsidian را میتوان از طریق جدول `api_key_context_sources` بهصورت
-**اختصاصی برای هر کلید API** محدود کرد (`src/lib/db/apiKeyContextSources.ts`). هنگامی
-که یک فراخوانی MCP دارای شناسهٔ کلید API احراز هویتشده باشد،
-`getObsidianConfigForApiKey()` ابتدا توکن، URL پایه و مسیر vault مختص همان کلید
-(`source: "api_key"`) را ترجیح میدهد و در غیر این صورت به پیکربندی سراسری
-(`source: "global"`) بازمیگردد.
+احراز هویت WebDAV ردیابی و قفل شکست در هر IP را اعمال می کند (10 تلاش ناموفق در یک پنجره 60 ثانیه ای یک قفل 5 دقیقه ای با `429 Too Many Requests` و `Retry-After` را آغاز می کند). از آنجا که WebDAV اعتبار احراز هویت اولیه را ارسال می کند، خاتمه TLS (یا مسیریابی از طریق یک تونل امن مانند Tailscale یا Cloudflare تونل) هنگام دسترسی به نقطه پایانی WebDAV در خارج از حلقه بک به شدت توصیه می شود.
 
-ابزارهای MCP غیرهمگامسازی پیش از خواندن این پیکربندی به هویت تعیینشدهٔ فراخواننده
-نیاز دارند. فراخوانندهٔ فاقد هویت، پیام `Obsidian API token not configured` را دریافت
-میکند و هیچ درخواستی به vault ارسال نمیشود. هویت فراخوانندگان HTTP از طریق
-اعتبارنامههای درخواستشان تعیین میشود؛ هویت فراخوانندگان stdio میتواند از طریق
-`OMNIROUTE_API_KEY` یا `ROUTER_API_KEY` تعیین شود. یک فراخوانندهٔ HTTP با هویت
-تعییننشده نمیتواند هویت محیطی سرور را به ارث ببرد. شناسههای جاینگهدار بهتنهایی
-مجوز دسترسی نمیدهند؛ پشتیبانی از یک اعتبارنامهٔ محیطی معتبر که به `env-key` نگاشت
-میشود همچنان برقرار است. کلیدهای احراز هویتشدهای که پیکربندی اختصاصی Obsidian
-ندارند، همچنان از پیکربندی سراسری بهعنوان گزینهٔ جایگزین استفاده میکنند. چهار ابزار
-`obsidian_sync_*` رفتار جداگانهٔ خود را برای توکن همگامسازی حفظ میکنند.
+### منبع زمینه هر کلید API (اختیاری)
+
+پیکربندی Obsidian را می توان محدوده کرد** در هر کلید API** از طریق جدول `api_key_context_sources` (`src/lib/db/apiKeyContextSources.ts`). هنگامی که یک تماس MCP دارای شناسه کلید API تأیید شده است، `getObsidianConfigForApiKey()` token/base-URL/vault-path آن کلید (`source: "api_key"`) را ترجیح می دهد و در غیر این صورت به پیکربندی جهانی (`source: "global"`) باز می گردد.
+
+ابزارهای غیرهمگام MCP قبل از خواندن این پیکربندی نیاز به یک هویت تماس گیرنده حل شده دارند. تماسگیرنده بدون هویت `Obsidian API token not configured` دریافت میکند و هیچ درخواستی ارسال نمیشود. تماس گیرندگان HTTP از طریق اعتبارنامه درخواست خود حل و فصل می کنند. تماس گیرندگان stdio می توانند از طریق `OMNIROUTE_API_KEY` یا `ROUTER_API_KEY` حل و فصل کنند. تماس گیرنده HTTP حل نشده نمی تواند هویت محیط سرور را به ارث ببرد. جای جای IDs به تنهایی اجازه دسترسی را نمی دهد. یک اعتبار محیطی معتبر که به `env-key` حل می شود پشتیبانی می شود. کلیدهای احراز هویت شده بدون پیکربندی Obsidian برای هر کلید، بک گراند جهانی را حفظ می کنند. چهار ابزار `obsidian_sync_*` رفتار نشانه همگام سازی جداگانه خود را حفظ می کنند.
 
 ## ابزارهای MCP (22)
 

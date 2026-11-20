@@ -34,92 +34,67 @@ OmniRoute ஒரு **Obsidian** வால்ட்டுடன் **சூழ�
 - இடைவெளிகள்/சாய்வுக்கோடுகள் கொண்ட குறிப்புப் பாதைகள் பாதுகாப்பாக இருக்க, வால்ட்-சார்ந்த
   **பாதைக் குறியாக்கம்**.
 
-## அமைப்பு
+## அமைவு
 
-Obsidian token அல்லது base URL-க்கான **environment variable எதுவும் இல்லை** — இரண்டும்
-`src/lib/db/obsidian.ts` மூலம் SQLite `key_value` அட்டவணையில் (namespace `obsidian`)
-சேமிக்கப்படுகின்றன. Token **சேமிக்கப்பட்ட நிலையில் குறியாக்கப்பட்டுள்ளது** (AES-256-GCM,
-plaintext பின்னோக்கிய இணக்கத்தன்மை fallback உடன்). Endpoint dashboard-இன்
-**Context Sources** தாவலில் (`ObsidianSourceCard`) அல்லது settings REST API வழியாக
-உள்ளமைக்கவும்.
+உள்ளது** சுற்றுச்சூழல் மாறி இல்லை** Obsidian டோக்கன் அல்லது அடிப்படை URL — இரண்டும் SQLite `key_value` அட்டவணையில் (பெயர்வெளி `obsidian`) `src/lib/db/obsidian.ts` வழியாக சேமிக்கப்படும். டோக்கன் ஆகும்** ஓய்வு நேரத்தில் குறியாக்கம் செய்யப்பட்டது** (AES-256-GCM, ப்ளைன்டெக்ஸ்ட் பேக்வர்ட்-காம்பாட் ஃபால்பேக் உடன்). இலிருந்து கட்டமைக்கவும்** சூழல் ஆதாரங்கள்** எண்ட்பாயிண்ட் டாஷ்போர்டின் தாவல் (`ObsidianSourceCard`), அல்லது அமைப்புகள் வழியாக REST API.
 
 > [!IMPORTANT]
-> **Obsidian Local REST API** plugin நிறுவப்பட்டு இயங்கிக்கொண்டிருக்க வேண்டும். அதன் REST
-> interface **HTTP `127.0.0.1:27123`**-இல் (இயல்புநிலை base URL) கேட்கிறது. Port `27124`
-> என்பது ஒரு _தனியான_ MCP/HTTPS endpoint ஆகும்; இது settings route-ஆல் வெளிப்படையாக
-> நிராகரிக்கப்படுகிறது. வேறொரு சாதனத்திலிருந்து இணைக்கும்போது,
-> `http://<tailscale-ip>:27123`-ஐப் பயன்படுத்தவும்.
+> தி**Obsidian உள்ளூர் REST API** சொருகி நிறுவப்பட்டு இயங்க வேண்டும். அதன் REST இடைமுகம் கேட்கிறது**HTTP `127.0.0.1:27123`** (இயல்புநிலை அடிப்படை URL). போர்ட் `27124` என்பது ஒரு _separate_ MCP/HTTPS இறுதிப்புள்ளி மற்றும் அமைப்புகளின் வழியால் வெளிப்படையாக நிராகரிக்கப்படுகிறது. வேறொரு சாதனத்திலிருந்து இணைக்கப்பட்டால், `http://<tailscale-ip>:27123` பயன்படுத்தவும்.
 
-### உள்ளமைவு விசைகள் (SQLite `key_value`, namespace `obsidian`)
+### கட்டமைப்பு விசைகள் (SQLite `key_value`, namespace `obsidian`)
 
-| விசை              | நோக்கம்                                             | குறியாக்கப்பட்டது |
-| ----------------- | --------------------------------------------------- | ----------------- |
-| `api_key`         | Local REST API bearer token                         | ஆம்               |
-| `base_url`        | REST base URL (இயல்புநிலை `http://127.0.0.1:27123`) | இல்லை             |
-| `vault_path`      | vault கோப்பகத்திற்கான முழுமையான பாதை (sync-க்காக)   | இல்லை             |
-| `webdav_username` | உருவாக்கப்பட்ட WebDAV பயனர்பெயர் (vault sync)       | இல்லை             |
-| `webdav_password` | உருவாக்கப்பட்ட WebDAV கடவுச்சொல் (vault sync)       | ஆம்               |
-| `webdav_enabled`  | WebDAV vault sync இயக்கப்பட்டுள்ளதா என்பது          | இல்லை             |
+| முக்கிய           | நோக்கம்                                                 | குறியாக்கம் செய்யப்பட்டது |
+| ----------------- | ------------------------------------------------------- | ------------------------- |
+| `api_key`         | உள்ளூர் REST API தாங்கி டோக்கன்                         | ஆம்                       |
+| `base_url`        | REST அடிப்படை URL (இயல்புநிலை `http://127.0.0.1:27123`) | இல்லை                     |
+| `vault_path`      | வால்ட் கோப்பகத்திற்கான முழுமையான பாதை (ஒத்திசைவுக்கு)   | இல்லை                     |
+| `webdav_username` | உருவாக்கப்பட்ட WebDAV பயனர்பெயர் (வால்ட் ஒத்திசைவு)     | இல்லை                     |
+| `webdav_password` | உருவாக்கப்பட்ட WebDAV கடவுச்சொல் (வால்ட் ஒத்திசைவு)     | ஆம்                       |
+| `webdav_enabled`  | WebDAV vault ஒத்திசைவு இயக்கப்பட்டுள்ளதா                | இல்லை                     |
 
-### REST வழியாக உள்ளமைக்கவும்
+### REST வழியாக கட்டமைக்கவும்
 
 ```bash
-# Local REST API token-ஐச் சேமித்து சரிபார்க்கவும் (POST ஒரு status check மூலம் சரிபார்க்கிறது)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# இணைப்பு நிலையைச் சரிபார்க்கவும் (connected, hasToken, baseUrl, vaultPath ஆகியவற்றைத் திருப்பித் தரும்)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# இணைப்பைத் துண்டிக்கவும் (சேமிக்கப்பட்ட token-ஐ அழிக்கும்)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-அனைத்து முறைகளுக்கும் dashboard அங்கீகாரம் தேவை. Port `27124`-இல் உள்ள எந்த URL-ஐயும்
-`POST` நிராகரிக்கிறது; மேலும், சேமிப்பதற்கு முன் Local REST API status endpoint-ஐ
-அழைப்பதன் மூலம் token-ஐச் சரிபார்க்கிறது.
+அனைத்து முறைகளுக்கும் டாஷ்போர்டு அங்கீகாரம் தேவை. `POST` போர்ட் `27124` இல் உள்ள எந்த URL நிராகரிக்கிறது மற்றும் தொடர்வதற்கு முன் லோக்கல் REST API நிலை இறுதிப்புள்ளியை அழைப்பதன் மூலம் டோக்கனை சரிபார்க்கிறது.
 
-### WebDAV vault ஒத்திசைவு
+### WebDAV வால்ட் ஒத்திசைவு
 
-`src/app/api/settings/obsidian/webdav/route.ts`, விருப்பமான WebDAV ஆதரவுள்ள
-vault ஒத்திசைவை நிர்வகிக்கிறது (`src/lib/obsidianSync.ts` மூலம் இயக்கப்படுகிறது). இதை
-இயக்குவது OmniRoute-ஐ ஒரு உள்ளூர் vault கோப்பகத்திற்குச் சுட்டி, சீரற்ற WebDAV
-பயனர்பெயர்/கடவுச்சொல் இணையை உருவாக்குகிறது:
+`src/app/api/settings/obsidian/webdav/route.ts` ஒரு விருப்ப WebDAV-ஆதரவு வால்ட் ஒத்திசைவை நிர்வகிக்கிறது ( `src/lib/obsidianSync.ts` ஆல் இயக்கப்படுகிறது). அதை இயக்குவது, லோக்கல் வால்ட் டைரக்டரியில் OmniRoute புள்ளிகள் மற்றும் ஒரு சீரற்ற WebDAV username/password ஜோடியை உருவாக்குகிறது:
 
 ```bash
-# ஒரு vault கோப்பகத்திற்கான WebDAV sync-ஐ இயக்கவும் (பயனர்பெயர்/கடவுச்சொல்லை உருவாக்கும்)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# WebDAV sync நிலையைப் பெறவும் (இயக்கப்பட்டிருக்கும்போது மட்டுமே சான்றுகள் திருப்பித் தரப்படும்)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# WebDAV sync-ஐ முடக்கவும் (சான்றுகள் + நிர்வகிக்கப்படும் .stignore ஆகியவற்றை அழிக்கும்)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
-### API விசை ஒன்றுக்கான context source (விருப்பத்தேர்வு)
+### பாதுகாப்பு மற்றும் போக்குவரத்து
 
-Obsidian config-ஐ `api_key_context_sources` அட்டவணை
-(`src/lib/db/apiKeyContextSources.ts`) வழியாக **ஒவ்வொரு API விசைக்கும்** தனித்தனியாக
-வரையறுக்கலாம். ஓர் MCP அழைப்பு அங்கீகரிக்கப்பட்ட API key id-ஐக் கொண்டிருக்கும்போது,
-`getObsidianConfigForApiKey()` அந்த விசைக்குரிய சொந்த token/base-URL/vault-path-ஐ
-(`source: "api_key"`) முன்னுரிமையுடன் பயன்படுத்துகிறது; இல்லையெனில் உலகளாவிய config-க்கு
-(`source: "global"`) fallback செய்கிறது.
+WebDAV அங்கீகாரம் ஒரு IP தோல்வி கண்காணிப்பு மற்றும் லாக்அவுட்டைச் செயல்படுத்துகிறது (60-வினாடி சாளரத்தில் 10 தோல்வியுற்ற முயற்சிகள் `429 Too Many Requests` மற்றும் `Retry-After` உடன் 5 நிமிட லாக்அவுட்டைத் தூண்டுகிறது). WebDAV அடிப்படை அங்கீகரிப்பு நற்சான்றிதழ்களை அனுப்புவதால், TLS நிறுத்துவது (அல்லது Tailscale அல்லது Cloudflare டன்னல் போன்ற பாதுகாப்பான சுரங்கப்பாதை வழியாகச் செல்வது) லூப்பேக்கிற்கு வெளியே WebDAV எண்ட்பாயிண்ட்டை அணுகும்போது கடுமையாகப் பரிந்துரைக்கப்படுகிறது.
 
-ஒத்திசைவு சாராத MCP கருவிகள், இந்த உள்ளமைவைப் படிப்பதற்கு முன் அழைப்பவரின் அடையாளத்தைத்
-தீர்மானிக்க வேண்டும். அடையாளம் இல்லாத அழைப்பவர் `Obsidian API token not configured`
-என்ற செய்தியைப் பெறுவார்; எந்த vault கோரிக்கையும் அனுப்பப்படாது. HTTP அழைப்பவர்களின்
-அடையாளம் அவர்களின் கோரிக்கைச் சான்றுகள் மூலம் தீர்மானிக்கப்படுகிறது; stdio அழைப்பவர்களின்
-அடையாளத்தை `OMNIROUTE_API_KEY` அல்லது `ROUTER_API_KEY` மூலம் தீர்மானிக்கலாம்.
-அடையாளம் தீர்மானிக்கப்படாத HTTP அழைப்பவர் server-இன் environment அடையாளத்தைப் பெற
-முடியாது. Placeholder ID-கள் மட்டும் அணுகலை அங்கீகரிக்காது; `env-key` ஆகத்
-தீர்மானிக்கப்படும் செல்லுபடியாகும் environment credential தொடர்ந்து ஆதரிக்கப்படுகிறது.
-API விசைக்கே உரிய Obsidian உள்ளமைவு இல்லாத அங்கீகரிக்கப்பட்ட விசைகள், உலகளாவிய
-fallback-ஐத் தொடர்ந்து பயன்படுத்தும். நான்கு `obsidian_sync_*` கருவிகளும் தங்களது
-தனித்துவமான sync-token நடத்தையைத் தொடர்கின்றன.
+### ஒவ்வொரு API-முக்கிய சூழல் ஆதாரம் (விரும்பினால்)
+
+Obsidian config ஐ நோக்கலாம்** ஒரு API விசைக்கு** `api_key_context_sources` அட்டவணை வழியாக (`src/lib/db/apiKeyContextSources.ts`). ஒரு MCP அழைப்பு அங்கீகரிக்கப்பட்ட API விசை ஐடியைக் கொண்டிருக்கும் போது, `getObsidianConfigForApiKey()` அந்த விசையின் சொந்த token/base-URL/vault-path (`source: "api_key"`) ஐ விரும்புகிறது, இல்லையெனில் உலகளாவிய கட்டமைப்பிற்கு (`source: "global"`) திரும்பும்.
+
+ஒத்திசைக்காத MCP கருவிகளுக்கு இந்த உள்ளமைவைப் படிக்கும் முன் தீர்க்கப்பட்ட அழைப்பாளர் அடையாளம் தேவை. அடையாளம் இல்லாமல் அழைப்பவர் `Obsidian API token not configured` பெறுகிறார், மேலும் வால்ட் கோரிக்கை அனுப்பப்படாது. HTTP அழைப்பாளர்கள் தங்கள் கோரிக்கை நற்சான்றிதழ்கள் மூலம் தீர்க்கிறார்கள்; stdio அழைப்பாளர்கள் `OMNIROUTE_API_KEY` அல்லது `ROUTER_API_KEY` மூலம் தீர்க்க முடியும். தீர்க்கப்படாத HTTP அழைப்பாளர் சேவையகத்தின் சூழல் அடையாளத்தைப் பெற முடியாது. ஒதுக்கிட IDs மட்டும் அணுகலை அங்கீகரிக்காது; `env-key` க்கு தீர்வுகாணும் சரியான சூழல் நற்சான்றிதழ் ஆதரிக்கப்படும். ஒவ்வொரு விசைக்கும் Obsidian உள்ளமைவு இல்லாத அங்கீகரிக்கப்பட்ட விசைகள் உலகளாவிய வீழ்ச்சியைத் தக்கவைத்துக்கொள்கின்றன. நான்கு `obsidian_sync_*` கருவிகள் அவற்றின் தனி ஒத்திசைவு-டோக்கன் நடத்தையை வைத்திருக்கின்றன.
 
 ## MCP கருவிகள் (22)
 

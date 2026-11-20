@@ -31,81 +31,65 @@ OmniRoute מתחבר לכספת **Obsidian** בתור **מקור הקשר** — 
 
 ## הגדרה
 
-אין **משתנה סביבה** עבור אסימון Obsidian או כתובת ה-URL הבסיסית — שניהם
-מאוחסנים בטבלת `key_value` של SQLite (במרחב השמות `obsidian`) באמצעות
-`src/lib/db/obsidian.ts`. האסימון **מוצפן בעת אחסון** (AES-256-GCM, עם
-מנגנון נסיגה לטקסט גלוי לצורך תאימות לאחור). ניתן להגדיר זאת מלשונית **מקורות הקשר** בלוח הבקרה של
-נקודת הקצה (`ObsidianSourceCard`), או באמצעות API ההגדרות מסוג REST.
+יֵשׁ** ללא משתנה סביבה** עבור האסימון Obsidian או הבסיס URL — שניהם מאוחסנים בטבלת SQLite `key_value` (שם מרחב `obsidian`) דרך `src/lib/db/obsidian.ts`. האסימון הוא** מוצפן בזמן מנוחה** (AES-256-GCM, עם סתירה לאחור-תואמת טקסט רגיל). הגדר מה-** מקורות הקשר** לשונית של לוח המחוונים של נקודת הקצה (`ObsidianSourceCard`), או דרך ההגדרות REST API.
 
 > [!IMPORTANT]
-> התוסף **Obsidian Local REST API** חייב להיות מותקן ופעיל. ממשק ה-REST שלו
-> מאזין ב-**HTTP `127.0.0.1:27123`** (כתובת ה-URL הבסיסית המוגדרת כברירת מחדל). היציאה `27124`
-> היא נקודת קצה _נפרדת_ של MCP/HTTPS, ונתיב ההגדרות דוחה אותה במפורש.
-> בעת התחברות ממכשיר אחר, השתמשו ב-`http://<tailscale-ip>:27123`.
+> ה**Obsidian מקומי REST API** התוסף חייב להיות מותקן ופועל. ממשק REST שלו מאזין**HTTP `127.0.0.1:27123`** (בסיס ברירת המחדל URL). Port `27124` היא נקודת קצה _separate_ MCP/HTTPS ונדחתה במפורש על ידי מסלול ההגדרות. אם מתחבר מהתקן אחר, השתמש `http://<tailscale-ip>:27123`.
 
-### מפתחות הגדרה (SQLite `key_value`, מרחב השמות `obsidian`)
+### מפתחות תצורה (SQLite `key_value`, מרחב שמות `obsidian`)
 
-| מפתח              | מטרה                                                           | מוצפן |
-| ----------------- | -------------------------------------------------------------- | ----- |
-| `api_key`         | אסימון נושא של Local REST API                                  | כן    |
-| `base_url`        | כתובת URL בסיסית של REST (ברירת מחדל `http://127.0.0.1:27123`) | לא    |
-| `vault_path`      | נתיב מוחלט לספריית הכספת (לסנכרון)                             | לא    |
-| `webdav_username` | שם משתמש WebDAV שנוצר (סנכרון כספת)                            | לא    |
-| `webdav_password` | סיסמת WebDAV שנוצרה (סנכרון כספת)                              | כן    |
-| `webdav_enabled`  | האם סנכרון הכספת באמצעות WebDAV מופעל                          | לא    |
+| מַפְתֵחַ          | מַטָרָה                                             | מוצפן |
+| ----------------- | --------------------------------------------------- | ----- |
+| `api_key`         | אסימון REST API מקומי                               | כֵּן  |
+| `base_url`        | REST base URL (ברירת מחדל `http://127.0.0.1:27123`) | לֹא   |
+| `vault_path`      | נתיב מוחלט לספריית הכספת (לסינכרון)                 | לֹא   |
+| `webdav_username` | שם משתמש WebDAV שנוצר (סנכרון כספת)                 | לֹא   |
+| `webdav_password` | סיסמת WebDAV שנוצרה (סנכרון כספת)                   | כֵּן  |
+| `webdav_enabled`  | האם סנכרון WebDAV vault מופעל                       | לֹא   |
 
-### הגדרה באמצעות REST
+### הגדר דרך REST
 
 ```bash
-# שמירה ואימות של אסימון Local REST API (בקשת POST מאמתת באמצעות בדיקת סטטוס)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# בדיקת מצב החיבור (מחזירה connected, hasToken, baseUrl, vaultPath)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# ניתוק (מנקה את האסימון המאוחסן)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-כל המתודות דורשות אימות מול לוח הבקרה. `POST` דוחה כל כתובת URL ביציאה `27124`
-ומאמת את האסימון באמצעות קריאה לנקודת הקצה לבדיקת הסטטוס של Local REST API לפני השמירה.
+כל השיטות דורשות אימות של לוח המחוונים. `POST` דוחה כל URL ביציאה `27124` ומאמת את האסימון על ידי קריאה לנקודת הקצה Local REST API סטטוס לפני מתמיד.
 
-### סנכרון כספת באמצעות WebDAV
+### סנכרון WebDAV vault
 
-`src/app/api/settings/obsidian/webdav/route.ts` מנהל סנכרון כספת אופציונלי המבוסס על
-WebDAV (ומופעל באמצעות `src/lib/obsidianSync.ts`). הפעלתו מפנה את OmniRoute אל
-ספריית כספת מקומית ויוצרת צמד אקראי של שם משתמש וסיסמה ל-WebDAV:
+`src/app/api/settings/obsidian/webdav/route.ts` מנהל סנכרון כספת אופציונלי מגובה WebDAV (מונע על ידי `src/lib/obsidianSync.ts`). הפעלתו מפנה OmniRoute לספריית כספת מקומית ומטביעה זוג WebDAV username/password אקראי:
 
 ```bash
-# הפעלת סנכרון WebDAV עבור ספריית כספת (יוצרת שם משתמש וסיסמה)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# קבלת מצב הסנכרון של WebDAV (פרטי ההזדהות מוחזרים רק כאשר הוא מופעל)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# השבתת סנכרון WebDAV (מנקה את פרטי ההזדהות ואת קובץ ה-.stignore המנוהל)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
-### מקור הקשר לכל מפתח API (אופציונלי)
+### אבטחה ותחבורה
 
-ניתן להגדיר את תצורת Obsidian **לכל מפתח API בנפרד** באמצעות הטבלה `api_key_context_sources`
-(`src/lib/db/apiKeyContextSources.ts`). כאשר קריאת MCP כוללת מזהה של מפתח API
-מאומת, `getObsidianConfigForApiKey()` מעדיפה את האסימון/כתובת ה-URL הבסיסית/נתיב הכספת
-של אותו מפתח (`source: "api_key"`), ואם הם אינם קיימים, חוזרת לתצורה הגלובלית (`source: "global"`).
+אימות WebDAV אוכף מעקב ונעילה של כשלים לכל IP (10 ניסיונות כושלים בתוך חלון של 60 שניות מפעילים נעילה של 5 דקות עם `429 Too Many Requests` ו- `Retry-After`). מכיוון ש- WebDAV משדר אישורי אימות בסיסיים, סיום TLS (או ניתוב דרך מנהרה מאובטחת כגון Tailscale או Cloudflare Tunnel) מומלץ מאוד בעת גישה לנקודת הקצה WebDAV מחוץ ללולאה.
 
-כלי MCP שאינם כלי סנכרון דורשים זהות פתורה של מבצע הקריאה לפני קריאת תצורה זו.
-מבצע קריאה ללא זהות מקבל `Obsidian API token not configured`, ולא נשלחת בקשה
-לכספת. זהותם של מבצעי קריאות HTTP נפתרת באמצעות פרטי ההזדהות של הבקשה שלהם; זהותם של מבצעי
-קריאות stdio יכולה להיפתר באמצעות `OMNIROUTE_API_KEY` או `ROUTER_API_KEY`. מבצע קריאת HTTP
-שזהותו לא נפתרה אינו יכול לרשת את זהות הסביבה של השרת. מזהי מצייני מקום לבדם אינם מעניקים
-הרשאת גישה; עדיין קיימת תמיכה בפרטי הזדהות תקפים מהסביבה שנפתרים ל-`env-key`.
-מפתחות מאומתים ללא תצורת Obsidian ייעודית למפתח ממשיכים להשתמש בתצורה הגלובלית כברירת מחדל.
-ארבעת הכלים `obsidian_sync_*` ממשיכים להשתמש בהתנהגות הנפרדת שלהם עבור אסימון הסנכרון.
+### מקור הקשר לכל מפתח ממשק API (אופציונלי)
+
+ניתן להגדיר את תצורת Obsidian** לכל מפתח API** דרך טבלת `api_key_context_sources` (`src/lib/db/apiKeyContextSources.ts`). כאשר קריאת MCP נושאת מזהה מפתח API מאומת, `getObsidianConfigForApiKey()` מעדיף את token/base-URL/vault-path (`source: "api_key"`) של אותו מפתח עצמו, ובדרך אחרת נופלת בחזרה לתצורה הגלובלית (`source: "global"`).
+
+כלי MCP שאינם מסונכרנים דורשים זהות מתקשר שנפתרה לפני קריאת תצורה זו. מתקשר ללא זהות מקבל `Obsidian API token not configured`, ולא נשלחת בקשה לכספת. מתקשרי HTTP פותרים באמצעות אישורי הבקשה שלהם; מתקשרי stdio יכולים לפתור דרך `OMNIROUTE_API_KEY` או `ROUTER_API_KEY`. מתקשר ל- HTTP לא פתור לא יכול לרשת את זהות הסביבה של השרת. מציין מיקום IDs בלבד אינו מאשר גישה; אישור סביבה תקף שמתואם ל- `env-key` נשאר נתמך. מפתחות מאומתים ללא תצורת Obsidian לכל מפתח שומרים על החזרה הגלובלית. ארבעת הכלים `obsidian_sync_*` שומרים על התנהגות אסימון סינכרון נפרד שלהם.
 
 ## כלי MCP ‏(22)
 

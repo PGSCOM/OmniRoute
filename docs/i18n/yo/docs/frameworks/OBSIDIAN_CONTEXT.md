@@ -30,85 +30,67 @@ Oníbàárà náà (`src/lib/obsidian/api.ts`) fi àwọ̀n yí Local REST API k
   (HTTP lórí `27123`, **kì í ṣe** endpoint MCP lórí `27124`) àti fọ́ọ̀mù Tailscale.
 - **Ìṣàkọsílẹ̀ path** tó jẹ́ ìbátan sí vault, kí àwọn path àkọsílẹ̀ tó ní àyè/slash lè ní ààbò.
 
-## Ìṣètò
+## Ṣeto
 
-Kò sí **oníyí àyíká kankan** fún àmì ìdánimọ̀ Obsidian tàbí URL ìpìlẹ̀ — àwọn méjèèjì ni a
-fi pamọ́ sínú tábìlì SQLite `key_value` (ààyè-orúkọ `obsidian`) nípasẹ̀
-`src/lib/db/obsidian.ts`. A **parọ́ mọ́ àmì ìdánimọ̀ náà níbi ìpamọ́** (AES-256-GCM, pẹ̀lú
-àsopọ̀ àfẹ́yìntì ìbámu fún ọ̀rọ̀ gbangba). Ṣètò rẹ̀ láti taabu **Context Sources** ti
-pátákó ìdarí Endpoint (`ObsidianSourceCard`), tàbí nípasẹ̀ API REST ti àwọn ààtò.
+O wa** ko si ayika oniyipada** fun ami Obsidian tabi ipilẹ URL — mejeeji wa ni ipamọ sinu tabili SQLite `key_value` (namespace `obsidian`) nipasẹ `src/lib/db/obsidian.ts`. Aami ni** ti paroko ni isinmi** (AES-256-GCM, pẹlu itele ti ifẹsẹwọnsẹ sẹhin-compat fallback). Tunto lati awọn** Awọn orisun ọrọ** taabu ti dasibodu Ipari (`ObsidianSourceCard`), tabi nipasẹ awọn eto REST API.
 
 > [!IMPORTANT]
-> A gbọ́dọ̀ fi àfikún **Obsidian Local REST API** sí ẹ̀rọ, kí ó sì máa ṣiṣẹ́. Ojú-ọ̀nà REST
-> rẹ̀ ń fetí sí **HTTP `127.0.0.1:27123`** (URL ìpìlẹ̀ àiyipada). Port `27124`
-> jẹ́ ojú-ọ̀nà MCP/HTTPS _ọ̀tọ̀_, ipa-ọ̀nà àwọn ààtò sì kọ̀ ọ́ ní tààràtà.
-> Bí o bá ń sopọ̀ láti ẹ̀rọ mìíràn, lo `http://<tailscale-ip>:27123`.
+> Awọn**Obsidian Agbegbe REST API** itanna gbọdọ wa ni fi sori ẹrọ ati ki o nṣiṣẹ. Ni wiwo REST rẹ ngbọ lori**HTTP `127.0.0.1:27123`** (ipilẹ aiyipada URL). Port `27124` jẹ aaye ipari _separate_ MCP/HTTPS ati pe a kọ ni gbangba nipasẹ ọna eto. Ti o ba sopọ lati ẹrọ miiran, lo `http://<tailscale-ip>:27123`.
 
-### Àwọn kọ́kọ́rọ́ ìṣètò (SQLite `key_value`, ààyè-orúkọ `obsidian`)
+### Awọn bọtini atunto (SQLite `key_value`, orukọ aaye `obsidian`)
 
-| Kọ́kọ́rọ́            | Ìdí                                                | Ti parọ́ mọ́ |
-| ----------------- | -------------------------------------------------- | ---------- |
-| `api_key`         | Àmì ìdánimọ̀ bearer ti Local REST API               | bẹ́ẹ̀ ni     |
-| `base_url`        | URL ìpìlẹ̀ REST (àiyipada `http://127.0.0.1:27123`) | bẹ́ẹ̀ kọ́     |
-| `vault_path`      | Ojú-ọ̀nà alákòóso sí àpò-ọ̀rọ̀ vault (fún ìmúdọ́gba)   | bẹ́ẹ̀ kọ́     |
-| `webdav_username` | Orúkọ aṣàmúlò WebDAV tí a ṣẹ̀dá (ìmúdọ́gba vault)    | bẹ́ẹ̀ kọ́     |
-| `webdav_password` | Ọ̀rọ̀ aṣínà WebDAV tí a ṣẹ̀dá (ìmúdọ́gba vault)        | bẹ́ẹ̀ ni     |
-| `webdav_enabled`  | Bóyá ìmúdọ́gba vault WebDAV ti ṣiṣẹ́                 | bẹ́ẹ̀ kọ́     |
+| Bọtini            | Idi                                               | Ti paroko |
+| ----------------- | ------------------------------------------------- | --------- |
+| `api_key`         | Àmi agbateru REST API agbegbe                     | beeni     |
+| `base_url`        | REST mimọ URL (aiyipada `http://127.0.0.1:27123`) | rara      |
+| `vault_path`      | Ọna pipe si itọsọna ifinkan (fun imuṣiṣẹpọ)       | rara      |
+| `webdav_username` | Ti ipilẹṣẹ WebDAV orukọ olumulo (imuṣiṣẹpọ vault) | rara      |
+| `webdav_password` | Ọrọigbaniwọle WebDAV ti ipilẹṣẹ (imuṣiṣẹpọ vault) | beeni     |
+| `webdav_enabled`  | Boya WebDAV vault ìsiṣẹpọ wa ni sise              | rara      |
 
-### Ṣètò nípasẹ̀ REST
+### Tunto nipasẹ REST
 
 ```bash
-# Fi àmì ìdánimọ̀ Local REST API pamọ́ + ṣàyẹ̀wò rẹ̀ (POST ń fìdí rẹ̀ múlẹ̀ nípasẹ̀ àyẹ̀wò ipò)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# Ṣàyẹ̀wò ipò àsopọ̀ (ó ń dá connected, hasToken, baseUrl, vaultPath padà)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# Já àsopọ̀ (ó ń pa àmì ìdánimọ̀ tí a fi pamọ́ rẹ́)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-Gbogbo àwọn ọ̀nà nílò ìfàṣẹsí pátákó ìdarí. `POST` kọ gbogbo URL lórí port `27124`
-ó sì ń fìdí àmì ìdánimọ̀ múlẹ̀ nípa pípe ojú-ọ̀nà ipò Local REST API kí ó tó fi í pamọ́.
+Gbogbo awọn ọna nilo ìfàṣẹsí Dasibodu. `POST` kọ eyikeyi URL lori ibudo `27124` ati pe o jẹri ami ami naa nipa pipe ipo API REST ṣaaju ki o to tẹsiwaju.
 
-### Ìmúdọ́gba vault WebDAV
+### WebDAV ifinkan ìsiṣẹpọ
 
-`src/app/api/settings/obsidian/webdav/route.ts` ń ṣàkóso ìmúdọ́gba vault àṣàyàn kan
-tí WebDAV ń ṣe àtìlẹ́yìn fún (tí `src/lib/obsidianSync.ts` ń darí). Ṣíṣiṣẹ́ rẹ̀ ń tọ́ka
-OmniRoute sí àkójọpọ̀ vault agbègbè, ó sì ń ṣẹ̀dá orúkọ aṣàmúlò/ọ̀rọ̀ aṣínà WebDAV láìròtẹ́lẹ̀:
+`src/app/api/settings/obsidian/webdav/route.ts` n ṣakoso imuṣiṣẹpọ ifinkan ti o ṣe atilẹyin WebDAV yiyan (ti a ṣe nipasẹ `src/lib/obsidianSync.ts`). Muu ṣiṣẹ ki o tọka OmniRoute ni iwe ilana ifinkan agbegbe kan ati ki o mints WebDAV username/password laileto kan:
 
 ```bash
-# Ṣí ìmúdọ́gba WebDAV ṣiṣẹ́ fún àkójọpọ̀ vault kan (ó ń ṣẹ̀dá orúkọ aṣàmúlò/ọ̀rọ̀ aṣínà)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# Gba ipò ìmúdọ́gba WebDAV (ìwé ẹ̀rí ni a máa dá padà nígbà tí ó bá ṣiṣẹ́ nìkan)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# Pa ìmúdọ́gba WebDAV (ó ń pa ìwé ẹ̀rí + .stignore tí a ṣàkóso rẹ́)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
-### Orísun àyíká fún kọ́kọ́rọ́ API kọ̀ọ̀kan (àṣàyàn)
+### Aabo & Transport
 
-A lè fi ààlà sí ìṣètò Obsidian **fún kọ́kọ́rọ́ API kọ̀ọ̀kan** nípasẹ̀ tábìlì
-`api_key_context_sources` (`src/lib/db/apiKeyContextSources.ts`). Nígbà tí ìpè MCP kan
-bá gbé id kọ́kọ́rọ́ API tí a ti fìdí rẹ̀ múlẹ̀, `getObsidianConfigForApiKey()` máa kọ́kọ́
-yan àmì ìdánimọ̀/URL-ìpìlẹ̀/ojú-ọ̀nà-vault tirẹ̀ (`source: "api_key"`), bí bẹ́ẹ̀ kọ́, yóò
-padà lo ìṣètò àgbáyé (`source: "global"`).
+ìfàṣẹsí WebDAV fi ipa mu ipasẹ ipasẹ ikuna fun-IP ati titiipa (awọn igbiyanju 10 ti o kuna laarin ferese iṣẹju-aaya 60 nfa titiipa iṣẹju 5 pẹlu `429 Too Many Requests` ati `Retry-After`). Nitori WebDAV n gbejade awọn iwe-ẹri Ipilẹ Ipilẹ, fopin si TLS (tabi afisona lori oju eefin to ni aabo gẹgẹbi Tailscale tabi Cloudflare Tunnel) ni a gbaniyanju ni pataki nigbati o wọle si aaye ipari WebDAV ni ita loopback.
 
-Àwọn irinṣẹ́ MCP tí kì í ṣe ti ìmúdọ́gba nílò ìdánimọ̀ olùpè tí a ti yanjú kí wọ́n tó ka
-ìṣètò yìí. Olùpè tí kò ní ìdánimọ̀ máa gba `Obsidian API token not configured`, kò sì ní
-sí ìbéèrè vault tí a ó fi ránṣẹ́. Àwọn olùpè HTTP ń yanjú rẹ̀ nípasẹ̀ ìwé ẹ̀rí ìbéèrè wọn;
-àwọn olùpè stdio lè yanjú rẹ̀ nípasẹ̀ `OMNIROUTE_API_KEY` tàbí `ROUTER_API_KEY`. Olùpè
-HTTP tí a kò lè yanjú kò lè jogún ìdánimọ̀ àyíká olupèsè. Àwọn ID afidípò nìkan kò fúnni
-láṣẹ láti wọlé; ìwé ẹ̀rí àyíká tó fẹsẹ̀ múlẹ̀, tí ó yanjú sí `env-key`, ṣì ń ṣiṣẹ́.
-Àwọn kọ́kọ́rọ́ tí a ti fìdí wọn múlẹ̀ tí kò ní ìṣètò Obsidian ti kọ́kọ́rọ́ náà ṣì lè lo
-àfẹ́yìntì àgbáyé. Àwọn irinṣẹ́ `obsidian_sync_*` mẹ́rin náà ṣì ń lo ìhùwàsí àmì ìdánimọ̀
-ìmúdọ́gba ọ̀tọ̀ tiwọn.
+### Fun-API-bọtini orisun orisun ọrọ (aṣayan)
+
+Obsidian konfigi le ti wa ni scoped** fun bọtini API** nipasẹ tabili `api_key_context_sources` (`src/lib/db/apiKeyContextSources.ts`). Nigbati ipe MCP ba gbe id bọtini API ti o jẹri, `getObsidianConfigForApiKey()` fẹran bọtini tirẹ token/base-URL/vault-path (`source: "api_key"`) ati bibẹẹkọ ṣubu pada si atunto agbaye (`source: "global"`).
+
+Awọn irinṣẹ MCP ti kii ṣe amuṣiṣẹpọ nilo idanimọ olupe ti o yanju ṣaaju kika iṣeto yii. Olupe ti ko ni idanimọ gba `Obsidian API token not configured`, ko si si ibeere ifinkan ranṣẹ. awọn olupe HTTP pinnu nipasẹ awọn iwe-ẹri ibeere wọn; Awọn olupe stdio le yanju nipasẹ `OMNIROUTE_API_KEY` tabi `ROUTER_API_KEY`. Olupe HTTP ti ko yanju ko le jogun idanimọ ayika olupin naa. Placeholder IDs nikan ko fun laṣẹ wiwọle; Ijẹrisi ayika to wulo ti o pinnu si `env-key` wa ni atilẹyin. Awọn bọtini idaniloju laisi iṣeto-bọtini Obsidian -kọọkan ṣe idaduro ifẹhinti agbaye. Awọn irinṣẹ `obsidian_sync_*` mẹrin naa tọju ihuwasi amuṣiṣẹpọ-àmi lọtọ wọn.
 
 ## Àwọn irinṣẹ́ MCP (22)
 

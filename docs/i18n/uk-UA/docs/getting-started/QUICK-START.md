@@ -8,9 +8,9 @@
 
 ---
 
-## Крок 1: Установіть OmniRoute
+## Крок 1: Встановіть OmniRoute
 
-Виберіть зручний для вас спосіб:
+Виберіть бажаний метод:
 
 ### Варіант A: npm (рекомендовано)
 
@@ -21,12 +21,12 @@ npm install -g omniroute
 ### Варіант B: Docker
 
 ```bash
-docker run -d --name omniroute -p 20128:20128 diegosouzapw/omniroute:latest
+docker run -d --name omniroute -p 20128:20128 cheaperinference/omniroute:latest
 ```
 
-`:latest` — це найвища **опублікована** стабільна версія SemVer. Цей тег **не** відстежує гілку git `main`. Для GitOps зафіксуйте `diegosouzapw/omniroute:X.Y.Z`. Див. [Теги образів / Канали випусків](../guides/DOCKER_GUIDE.md#release-channels).
+`:latest` є найвищим** опубліковано** стабільний SemVer. Це робить** ні** трек git `main`. Закріпити `cheaperinference/omniroute:X.Y.Z` для GitOps. Див. [Теги зображень/Канали випуску](../guides/DOCKER_GUIDE.md#release-channels).
 
-### Варіант C: з вихідного коду
+### Варіант C: з джерела
 
 ```bash
 git clone https://github.com/diegosouzapw/OmniRoute.git

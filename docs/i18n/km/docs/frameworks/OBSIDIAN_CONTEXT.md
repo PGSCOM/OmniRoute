@@ -29,83 +29,67 @@ Markdown មូលដ្ឋាន ដែល agent អាន និងសរស�
   (HTTP នៅលើ `27123` **មិនមែន** endpoint MCP នៅលើ `27124` ទេ) និងទម្រង់ Tailscale។
 - **ការអ៊ិនកូដ path** ដែលទាក់ទងនឹង vault ដើម្បីឱ្យ path កំណត់ត្រាដែលមានដកឃ្លា/សញ្ញា slash មានសុវត្ថិភាព។
 
-## ការដំឡើង
+## រៀបចំ
 
-មិនមាន **អថេរបរិស្ថាន** សម្រាប់ token ឬ base URL របស់ Obsidian ទេ — ទាំងពីរត្រូវបាន
-រក្សាទុកក្នុងតារាង SQLite `key_value` (namespace `obsidian`) តាមរយៈ
-`src/lib/db/obsidian.ts`។ token ត្រូវបាន **អ៊ិនគ្រីបនៅពេលរក្សាទុក** (AES-256-GCM ជាមួយ
-ការបម្រុងទុកភាពឆបគ្នាថយក្រោយជាអត្ថបទធម្មតា)។ កំណត់រចនាសម្ព័ន្ធពីផ្ទាំង **ប្រភពបរិបទ** នៃ
-ផ្ទាំងគ្រប់គ្រង Endpoint (`ObsidianSourceCard`) ឬតាមរយៈ REST API នៃការកំណត់។
+មាន** មិនមានការប្រែប្រួលបរិស្ថានទេ។** សម្រាប់ Obsidian token ឬ base URL — ទាំងពីរត្រូវបានរក្សាទុកក្នុងតារាង SQLite `key_value` (namespace `obsidian`) តាមរយៈ `src/lib/db/obsidian.ts`។ និមិត្តសញ្ញាគឺ** បានអ៊ិនគ្រីបនៅពេលសម្រាក** (AES-256-GCM ជាមួយនឹងអត្ថបទធម្មតា backward-compat fallback) ។ កំណត់រចនាសម្ព័ន្ធពី** ប្រភពបរិបទ** ផ្ទាំងនៃ Endpoint dashboard (`ObsidianSourceCard`) ឬតាមរយៈការកំណត់ REST API។
 
 > [!IMPORTANT]
-> កម្មវិធីជំនួយ **Obsidian Local REST API** ត្រូវតែបានដំឡើង និងកំពុងដំណើរការ។ ចំណុចប្រទាក់ REST
-> របស់វាស្តាប់នៅលើ **HTTP `127.0.0.1:27123`** (base URL លំនាំដើម)។ Port `27124`
-> គឺជា endpoint MCP/HTTPS _ដាច់ដោយឡែក_ ហើយត្រូវបានបដិសេធយ៉ាងច្បាស់ដោយ route នៃការកំណត់។
-> ប្រសិនបើភ្ជាប់ពីឧបករណ៍ផ្សេង សូមប្រើ `http://<tailscale-ip>:27123`។
+> នេះ។**Obsidian មូលដ្ឋាន REST API** កម្មវិធីជំនួយត្រូវតែត្រូវបានដំឡើង និងដំណើរការ។ ចំណុចប្រទាក់ REST របស់វាស្តាប់**HTTP `127.0.0.1:27123`** ( URL មូលដ្ឋានលំនាំដើម) ។ ច្រក `27124` គឺជាចំណុចបញ្ចប់ _separate_ MCP/HTTPS ហើយត្រូវបានបដិសេធយ៉ាងច្បាស់លាស់ដោយផ្លូវកំណត់។ ប្រសិនបើភ្ជាប់ពីឧបករណ៍ផ្សេងទៀត សូមប្រើ `http://<tailscale-ip>:27123`។
 
-### Key នៃការកំណត់រចនាសម្ព័ន្ធ (SQLite `key_value`, namespace `obsidian`)
+### គ្រាប់ចុចកំណត់រចនាសម្ព័ន្ធ (SQLite `key_value`, namespace `obsidian`)
 
-| Key               | គោលបំណង                                                    | បានអ៊ិនគ្រីប |
-| ----------------- | ---------------------------------------------------------- | ------------ |
-| `api_key`         | bearer token របស់ Local REST API                           | បាទ/ចាស      |
-| `base_url`        | REST base URL (លំនាំដើម `http://127.0.0.1:27123`)          | ទេ           |
-| `vault_path`      | path ដាច់ខាតទៅកាន់ថត vault (សម្រាប់ការធ្វើសមកាលកម្ម)       | ទេ           |
-| `webdav_username` | ឈ្មោះអ្នកប្រើ WebDAV ដែលបានបង្កើត (ការធ្វើសមកាលកម្ម vault) | ទេ           |
-| `webdav_password` | ពាក្យសម្ងាត់ WebDAV ដែលបានបង្កើត (ការធ្វើសមកាលកម្ម vault)  | បាទ/ចាស      |
-| `webdav_enabled`  | ថាតើការធ្វើសមកាលកម្ម WebDAV vault ត្រូវបានបើកឬអត់          | ទេ           |
+| សោ                | គោលបំណង                                                | បានអ៊ិនគ្រីប |
+| ----------------- | ------------------------------------------------------ | ------------ |
+| `api_key`         | និមិត្តសញ្ញាអ្នកកាន់ REST API ក្នុងស្រុក               | បាទ          |
+| `base_url`        | REST មូលដ្ឋាន URL ( `http://127.0.0.1:27123` លំនាំដើម) | ទេ           |
+| `vault_path`      | ផ្លូវដាច់ខាតទៅកាន់ថតតុដេក (សម្រាប់ធ្វើសមកាលកម្ម)       | ទេ           |
+| `webdav_username` | បានបង្កើតឈ្មោះអ្នកប្រើប្រាស់ WebDAV (សមកាលកម្មតុដេក)   | ទេ           |
+| `webdav_password` | បានបង្កើតពាក្យសម្ងាត់ WebDAV (សមកាលកម្មតុដេក)          | បាទ          |
+| `webdav_enabled`  | ថាតើការធ្វើសមកាលកម្ម WebDAV vault ត្រូវបានបើកឬអត់      | ទេ           |
 
 ### កំណត់រចនាសម្ព័ន្ធតាមរយៈ REST
 
 ```bash
-# រក្សាទុក + ផ្ទៀងផ្ទាត់ token របស់ Local REST API (POST ផ្ទៀងផ្ទាត់តាមរយៈការពិនិត្យស្ថានភាព)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# ពិនិត្យស្ថានភាពការតភ្ជាប់ (ត្រឡប់ connected, hasToken, baseUrl, vaultPath)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# ផ្តាច់ការតភ្ជាប់ (សម្អាត token ដែលបានរក្សាទុក)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-គ្រប់ method ទាំងអស់ទាមទារការផ្ទៀងផ្ទាត់អត្តសញ្ញាណរបស់ផ្ទាំងគ្រប់គ្រង។ `POST` បដិសេធ URL ណាមួយនៅលើ port `27124`
-ហើយផ្ទៀងផ្ទាត់ token ដោយហៅ endpoint ស្ថានភាពរបស់ Local REST API មុនពេលរក្សាទុក។
+វិធីសាស្រ្តទាំងអស់ទាមទារការផ្ទៀងផ្ទាត់ផ្ទាំងគ្រប់គ្រង។ `POST` បដិសេធ URL ណាមួយនៅលើច្រក `27124` និងធ្វើឱ្យមានសុពលភាពសញ្ញាសម្ងាត់ដោយហៅទៅកាន់ចំណុចបញ្ចប់ស្ថានភាព REST API មូលដ្ឋាន មុនពេលបន្ត។
 
-### ការធ្វើសមកាលកម្ម WebDAV vault
+### WebDAV តុដេកធ្វើសមកាលកម្ម
 
-`src/app/api/settings/obsidian/webdav/route.ts` គ្រប់គ្រងការធ្វើសមកាលកម្ម vault ដែលប្រើ
-WebDAV ជាជម្រើស (ដំណើរការដោយ `src/lib/obsidianSync.ts`)។ ការបើកវានឹងចង្អុល OmniRoute ទៅកាន់
-ថត vault មូលដ្ឋាន ហើយបង្កើតគូឈ្មោះអ្នកប្រើ/ពាក្យសម្ងាត់ WebDAV ចៃដន្យ៖
+`src/app/api/settings/obsidian/webdav/route.ts` គ្រប់គ្រងការធ្វើសមកាលកម្មតុដេកដែលគាំទ្រ WebDAV ជាជម្រើស (ជំរុញដោយ `src/lib/obsidianSync.ts`) ។ ការបើកដំណើរការវាចង្អុល OmniRoute នៅថតតុដេកក្នុងស្រុក ហើយកំណត់គូ WebDAV username/password ចៃដន្យ៖
 
 ```bash
-# បើកការធ្វើសមកាលកម្ម WebDAV សម្រាប់ថត vault (បង្កើតឈ្មោះអ្នកប្រើ/ពាក្យសម្ងាត់)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# ទទួលស្ថានភាពការធ្វើសមកាលកម្ម WebDAV (ព័ត៌មានសម្ងាត់ត្រូវបានត្រឡប់មកវិញតែនៅពេលបានបើក)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# បិទការធ្វើសមកាលកម្ម WebDAV (សម្អាតព័ត៌មានសម្ងាត់ + .stignore ដែលបានគ្រប់គ្រង)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
-### ប្រភពបរិបទតាម API key នីមួយៗ (ជាជម្រើស)
+### សុវត្ថិភាព និងដឹកជញ្ជូន
 
-ការកំណត់រចនាសម្ព័ន្ធ Obsidian អាចត្រូវបានកំណត់វិសាលភាព **តាម API key នីមួយៗ** តាមរយៈតារាង
-`api_key_context_sources` (`src/lib/db/apiKeyContextSources.ts`)។ នៅពេលការហៅ MCP មាន API
-key id ដែលបានផ្ទៀងផ្ទាត់អត្តសញ្ញាណ `getObsidianConfigForApiKey()` ផ្តល់អាទិភាពដល់ token/base-URL/vault-path
-ផ្ទាល់ខ្លួនរបស់ key នោះ (`source: "api_key"`) ហើយបើមិនមាន នឹងត្រឡប់ទៅប្រើការកំណត់រចនាសម្ព័ន្ធសកល (`source: "global"`)។
+ការផ្ទៀងផ្ទាត់WebDAV អនុវត្តការតាមដានការបរាជ័យក្នុងមួយ IP និងការចាក់សោរ (ការប៉ុនប៉ងបរាជ័យ 10 ដងក្នុងចន្លោះពេល 60 វិនាទីបង្កឱ្យមានការចាក់សោររយៈពេល 5 នាទីជាមួយនឹង `429 Too Many Requests` និង `Retry-After`) ។ ដោយសារតែ WebDAV បញ្ជូនព័ត៌មានផ្ទៀងផ្ទាត់មូលដ្ឋាន ការបញ្ចប់ TLS (ឬបញ្ជូនតាមផ្លូវរូងក្រោមដីដែលមានសុវត្ថិភាពដូចជា Tailscale ឬ Cloudflare Tunnel) ត្រូវបានណែនាំយ៉ាងខ្លាំងនៅពេលចូលទៅកាន់ចំណុចបញ្ចប់ WebDAV នៅខាងក្រៅរង្វិលជុំ។
 
-ឧបករណ៍ MCP ដែលមិនមែនសម្រាប់ធ្វើសមកាលកម្ម ទាមទារអត្តសញ្ញាណអ្នកហៅដែលបានកំណត់រួច មុនពេលអានការកំណត់រចនាសម្ព័ន្ធនេះ។
-អ្នកហៅដែលគ្មានអត្តសញ្ញាណនឹងទទួលបាន `Obsidian API token not configured` ហើយគ្មានសំណើ vault
-ណាមួយត្រូវបានផ្ញើទេ។ អ្នកហៅតាម HTTP ត្រូវបានកំណត់អត្តសញ្ញាណតាមរយៈព័ត៌មានសម្ងាត់នៃសំណើរបស់ពួកគេ ចំណែកអ្នកហៅតាម stdio
-អាចត្រូវបានកំណត់អត្តសញ្ញាណតាមរយៈ `OMNIROUTE_API_KEY` ឬ `ROUTER_API_KEY`។ អ្នកហៅតាម HTTP ដែលមិនអាចកំណត់អត្តសញ្ញាណបាន
-មិនអាចទទួលមរតកអត្តសញ្ញាណបរិស្ថានរបស់ម៉ាស៊ីនមេបានទេ។ placeholder ID តែមួយមុខមិនផ្តល់សិទ្ធិ
-ចូលប្រើទេ; ព័ត៌មានសម្ងាត់បរិស្ថានដែលមានសុពលភាព និងអាចកំណត់ទៅជា `env-key` នៅតែត្រូវបានគាំទ្រ។
-key ដែលបានផ្ទៀងផ្ទាត់អត្តសញ្ញាណ ប៉ុន្តែគ្មានការកំណត់រចនាសម្ព័ន្ធ Obsidian តាម key នឹងនៅតែប្រើការកំណត់សកលជំនួស។
-ឧបករណ៍ `obsidian_sync_*` ទាំងបួនរក្សាឥរិយាបថ sync-token ដាច់ដោយឡែករបស់ពួកវា។
+### ប្រភពបរិបទនៃសោ API (ជាជម្រើស)
+
+Obsidian config អាចត្រូវបានកំណត់** ក្នុងមួយគ្រាប់ចុច API** តាមរយៈតារាង `api_key_context_sources` (`src/lib/db/apiKeyContextSources.ts`) ។ នៅពេលការហៅទូរសព្ទ MCP ផ្ទុកលេខសម្គាល់សោ API ដែលផ្ទៀងផ្ទាត់ភាពត្រឹមត្រូវ `getObsidianConfigForApiKey()` ចូលចិត្ត token/base-URL/vault-path (`source: "api_key"`) ផ្ទាល់ខ្លួនរបស់សោនោះ ហើយបើមិនដូច្នេះទេនឹងត្រលប់ទៅការកំណត់សកល (`source: "global"`) ។
+
+ឧបករណ៍ MCP ដែលមិនធ្វើសមកាលកម្មទាមទារអត្តសញ្ញាណអ្នកហៅចូលដែលបានដោះស្រាយមុនពេលអានការកំណត់នេះ។ អ្នកហៅទូរសព្ទដោយគ្មានអត្តសញ្ញាណទទួល `Obsidian API token not configured` ហើយគ្មានសំណើរបន្ទប់ដេកត្រូវបានផ្ញើទេ។ អ្នកហៅទូរស័ព្ទ HTTP ដោះស្រាយតាមរយៈលិខិតសម្គាល់សំណើរបស់ពួកគេ; អ្នកហៅទូរស័ព្ទ stdio អាចដោះស្រាយតាមរយៈ `OMNIROUTE_API_KEY` ឬ `ROUTER_API_KEY`។ អ្នកហៅ HTTP ដែលមិនបានដោះស្រាយមិនអាចទទួលនូវអត្តសញ្ញាណបរិស្ថានរបស់ម៉ាស៊ីនមេបានទេ។ កន្លែងដាក់ IDs តែម្នាក់ឯងមិនអនុញ្ញាតឱ្យចូលប្រើទេ។ លិខិតសម្គាល់បរិស្ថានត្រឹមត្រូវដែលដោះស្រាយ `env-key` នៅតែត្រូវបានគាំទ្រ។ សោដែលបានផ្ទៀងផ្ទាត់ដោយមិនមានការកំណត់រចនាសម្ព័ន្ធ Obsidian ក្នុងមួយសោ រក្សាការត្រឡប់ជាសកល។ ឧបករណ៍ `obsidian_sync_*` ទាំងបួនរក្សាឥរិយាបថធ្វើសមកាលកម្មដាច់ដោយឡែករបស់ពួកគេ។
 
 ## ឧបករណ៍ MCP (22)
 

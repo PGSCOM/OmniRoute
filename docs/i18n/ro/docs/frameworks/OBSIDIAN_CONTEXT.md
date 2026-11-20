@@ -30,83 +30,67 @@ Clientul (`src/lib/obsidian/api.ts`) încapsulează Local REST API și oferă:
   privind portul (HTTP pe `27123`, **nu** endpoint-ul MCP de pe `27124`) și forma pentru Tailscale.
 - **Codificarea căilor** relative la seif, astfel încât căile notițelor care conțin spații/bare oblice să fie sigure.
 
-## Configurare
+## Înființat
 
-Nu există **nicio variabilă de mediu** pentru tokenul Obsidian sau URL-ul de bază — ambele sunt
-stocate în tabelul SQLite `key_value` (spațiul de nume `obsidian`) prin
-`src/lib/db/obsidian.ts`. Tokenul este **criptat în repaus** (AES-256-GCM, cu
-mecanism de rezervă compatibil retroactiv pentru text simplu). Configurați din fila **Surse de context** a
-panoului Endpoint (`ObsidianSourceCard`) sau prin API-ul REST pentru setări.
+Există** nicio variabilă de mediu** pentru simbolul Obsidian sau baza URL — ambele sunt stocate în tabelul SQLite `key_value` (spațiul de nume `obsidian`) prin `src/lib/db/obsidian.ts`. Jetonul este** criptat în repaus** (AES-256-GCM, cu alternativă de respingere a textului simplu). Configurați din** Surse de context** fila din tabloul de bord Endpoint (`ObsidianSourceCard`) sau prin setările REST API.
 
 > [!IMPORTANT]
-> Pluginul **Obsidian Local REST API** trebuie să fie instalat și să ruleze. Interfața sa REST
-> ascultă pe **HTTP `127.0.0.1:27123`** (URL-ul de bază implicit). Portul `27124`
-> este un endpoint MCP/HTTPS _separat_ și este respins explicit de ruta pentru setări.
-> Dacă vă conectați de pe alt dispozitiv, utilizați `http://<tailscale-ip>:27123`.
+> The**Obsidian Local REST API** pluginul trebuie să fie instalat și rulat. Interfața REST ascultă**HTTP `127.0.0.1:27123`** (baza implicită URL). Portul `27124` este un punct final MCP/HTTPS _separat_ și este respins în mod explicit de ruta de setări. Dacă vă conectați de la alt dispozitiv, utilizați `http://<tailscale-ip>:27123`.
 
-### Chei de configurare (SQLite `key_value`, spațiul de nume `obsidian`)
+### Chei de configurare (SQLite `key_value`, namespace `obsidian`)
 
-| Cheie             | Scop                                                           | Criptată |
-| ----------------- | -------------------------------------------------------------- | -------- |
-| `api_key`         | Token bearer pentru Local REST API                             | da       |
-| `base_url`        | URL de bază REST (implicit `http://127.0.0.1:27123`)           | nu       |
-| `vault_path`      | Calea absolută către directorul seifului (pentru sincronizare) | nu       |
-| `webdav_username` | Numele de utilizator WebDAV generat (sincronizarea seifului)   | nu       |
-| `webdav_password` | Parola WebDAV generată (sincronizarea seifului)                | da       |
-| `webdav_enabled`  | Dacă sincronizarea seifului prin WebDAV este activată          | nu       |
+| Cheie             | Scop                                                           | Criptat |
+| ----------------- | -------------------------------------------------------------- | ------- |
+| `api_key`         | Jeton local REST API purtător                                  | Da      |
+| `base_url`        | REST bază URL ( `http://127.0.0.1:27123` implicit)             | nu      |
+| `vault_path`      | Calea absolută către directorul seifului (pentru sincronizare) | nu      |
+| `webdav_username` | Nume de utilizator WebDAV generat (sincronizare seif)          | nu      |
+| `webdav_password` | Parola WebDAV generată (sincronizare seif)                     | Da      |
+| `webdav_enabled`  | Dacă WebDAV vault sync este activată                           | nu      |
 
-### Configurare prin REST
+### Configurați prin REST
 
 ```bash
-# Salvează și validează tokenul Local REST API (POST validează printr-o verificare a stării)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# Verifică starea conexiunii (returnează connected, hasToken, baseUrl, vaultPath)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# Deconectare (șterge tokenul stocat)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-Toate metodele necesită autentificare în panoul de control. `POST` respinge orice URL de pe portul `27124`
-și validează tokenul apelând endpointul de stare al Local REST API înainte de salvare.
+Toate metodele necesită autentificarea tabloului de bord. `POST` respinge orice URL de pe portul `27124` și validează jetonul apelând punctul final de stare local REST API înainte de a persista.
 
-### Sincronizarea seifului prin WebDAV
+### WebDAV vault sync
 
-`src/app/api/settings/obsidian/webdav/route.ts` gestionează o sincronizare opțională a
-seifului bazată pe WebDAV (controlată de `src/lib/obsidianSync.ts`). Activarea acesteia direcționează OmniRoute către un
-director local al seifului și generează o pereche aleatorie de nume de utilizator/parolă WebDAV:
+`src/app/api/settings/obsidian/webdav/route.ts` gestionează o sincronizare opțională a seifului WebDAV (condusă de `src/lib/obsidianSync.ts`). Activarea acestuia indică OmniRoute către un director de seif local și creează o pereche aleatorie WebDAV username/password :
 
 ```bash
-# Activează sincronizarea WebDAV pentru un director de seif (generează numele de utilizator/parola)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# Obține starea sincronizării WebDAV (datele de autentificare sunt returnate numai cât timp aceasta este activată)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# Dezactivează sincronizarea WebDAV (șterge datele de autentificare și fișierul .stignore gestionat)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
-### Sursă de context per cheie API (opțional)
+### Securitate și transport
 
-Configurația Obsidian poate fi limitată **per cheie API** prin tabelul `api_key_context_sources`
-(`src/lib/db/apiKeyContextSources.ts`). Când un apel MCP conține ID-ul unei chei API
-autentificate, `getObsidianConfigForApiKey()` preferă tokenul/URL-ul de bază/calea seifului proprii acelei chei
-(`source: "api_key"`), iar în caz contrar revine la configurația globală (`source: "global"`).
+Autentificarea WebDAV impune urmărirea și blocarea eșecului pe IP (10 încercări eșuate într-o fereastră de 60 de secunde declanșează o blocare de 5 minute cu `429 Too Many Requests` și `Retry-After`). Deoarece WebDAV transmite acreditările de autentificare de bază, terminarea TLS (sau rutarea printr-un tunel securizat, cum ar fi Tailscale sau Cloudflare Tunnel) este recomandată atunci când accesați punctul final WebDAV în afara loopback-ului.
 
-Instrumentele MCP care nu sunt destinate sincronizării necesită o identitate rezolvată a apelantului înainte de a citi această configurație.
-Un apelant fără identitate primește `Obsidian API token not configured` și nu este trimisă nicio solicitare
-către seif. Identitatea apelanților HTTP este rezolvată prin datele de autentificare ale solicitării; identitatea apelanților stdio
-poate fi rezolvată prin `OMNIROUTE_API_KEY` sau `ROUTER_API_KEY`. Un apelant HTTP a cărui identitate
-nu poate fi rezolvată nu poate moșteni identitatea de mediu a serverului. ID-urile substitutive singure nu autorizează
-accesul; o acreditare de mediu validă care este rezolvată la `env-key` rămâne acceptată.
-Cheile autentificate fără o configurație Obsidian per cheie păstrează mecanismul de rezervă către configurația globală.
-Cele patru instrumente `obsidian_sync_*` își păstrează comportamentul separat pentru tokenul de sincronizare.
+### Sursă de context per-cheie API (opțional)
+
+Obsidian config poate fi acoperită** pe API** prin tabelul `api_key_context_sources` (`src/lib/db/apiKeyContextSources.ts`). Când un apel MCP poartă un ID de cheie API autentificat, `getObsidianConfigForApiKey()` preferă propriul token/base-URL/vault-path (`source: "api_key"`) al acelei chei și, altfel, revine la configurația globală (`source: "global"`).
+
+Instrumentele MCP nesincronizate necesită o identitate a apelantului rezolvată înainte de a citi această configurație. Un apelant fără identitate primește `Obsidian API token not configured` și nu este trimisă nicio solicitare de seif. apelanții HTTP rezolvă prin acreditările de solicitare; Apelanții stdio pot rezolva prin `OMNIROUTE_API_KEY` sau `ROUTER_API_KEY`. Un apelant HTTP nerezolvat nu poate moșteni identitatea de mediu a serverului. Numai substituentul IDs nu autorizează accesul; o acreditare de mediu validă care se rezolvă în `env-key` rămâne acceptată. Cheile autentificate fără configurația Obsidian per-cheie păstrează alternativa globală. Cele patru instrumente `obsidian_sync_*` își păstrează comportamentul separat de simbol de sincronizare.
 
 ## Instrumente MCP (22)
 

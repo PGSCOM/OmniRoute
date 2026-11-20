@@ -31,83 +31,67 @@ Obsidian විධාන ධාවනය කිරීමට සහ (විකල
   **නොවේ**) සහ Tailscale ආකෘතිය පැහැදිලි කරන, මිත්රශීලී **"Obsidian වෙත ළඟා විය නොහැක" ඉඟියක්**.
 - ඉඩ සහ slash අඩංගු සටහන් මාර්ග ආරක්ෂිත කිරීම සඳහා vault එකට සාපේක්ෂ **මාර්ග කේතනය**.
 
-## පිහිටුවීම
+## සැලසුම
 
-Obsidian ටෝකනය හෝ මූලික URL සඳහා **පරිසර විචල්යයක් නොමැත** — ඒ දෙකම
-`src/lib/db/obsidian.ts` හරහා SQLite `key_value` වගුවේ (`obsidian` නාම අවකාශය යටතේ)
-ගබඩා කෙරේ. ටෝකනය **ගබඩා කර ඇති විට සංකේතනය කර ඇත** (AES-256-GCM, සාමාන්ය පෙළ
-පසුගාමී-අනුකූලතා fallback එකක් සමඟ). Endpoint උපකරණ පුවරුවේ **Context Sources** පටිත්තෙන්
-(`ObsidianSourceCard`) හෝ සැකසුම් REST API එක හරහා වින්යාස කරන්න.
+අර තියෙන්නේ** පරිසර විචල්‍යයක් නොමැත** Obsidian ටෝකනය හෝ URL — පාදය සඳහා දෙකම SQLite `key_value` වගුවේ (නාම අවකාශය `obsidian`) `src/lib/db/obsidian.ts` හරහා ගබඩා කර ඇත. සංකේතය වේ** විවේකයේදී සංකේතනය කර ඇත** (AES-256-GCM, plaintext backward-compat Fallback සමඟ). වෙතින් වින්‍යාස කරන්න** සන්දර්භය මූලාශ්ර** අන්ත ලක්ෂ්‍ය උපකරණ පුවරුවේ ටැබය (`ObsidianSourceCard`), හෝ සිටුවම් හරහා REST API.
 
 > [!IMPORTANT]
-> **Obsidian Local REST API** ප්ලගිනය ස්ථාපනය කර ක්රියාත්මක කර තිබිය යුතුය. එහි REST
-> අතුරුමුහුණත **HTTP `127.0.0.1:27123`** මත සවන් දෙයි (පෙරනිමි මූලික URL එක). `27124`
-> වරාය _වෙනම_ MCP/HTTPS අන්ත ලක්ෂ්යයක් වන අතර, සැකසුම් මාර්ගය මඟින් එය පැහැදිලිවම ප්රතික්ෂේප කරයි.
-> වෙනත් උපාංගයකින් සම්බන්ධ වන්නේ නම්, `http://<tailscale-ip>:27123` භාවිත කරන්න.
+> ද**Obsidian දේශීය REST API** ප්ලගිනය ස්ථාපනය කර ක්‍රියාත්මක විය යුතුය. එහි REST අතුරුමුහුණත සවන් දෙයි**HTTP `127.0.0.1:27123`** (පෙරනිමි පදනම URL). Port `27124` යනු _separate_ MCP/HTTPS අන්ත ලක්ෂ්‍යයක් වන අතර එය සැකසීම් මාර්ගයෙන් පැහැදිලිවම ප්‍රතික්ෂේප වේ. වෙනත් උපාංගයකින් සම්බන්ධ වන්නේ නම්, `http://<tailscale-ip>:27123` භාවිතා කරන්න.
 
-### වින්යාස යතුරු (SQLite `key_value`, නාම අවකාශය `obsidian`)
+### වින්‍යාස යතුරු (SQLite `key_value`, namespace `obsidian`)
 
-| යතුර              | අරමුණ                                                  | සංකේතනය කර ඇත |
-| ----------------- | ------------------------------------------------------ | ------------- |
-| `api_key`         | Local REST API bearer ටෝකනය                            | ඔව්           |
-| `base_url`        | REST මූලික URL එක (පෙරනිමිය `http://127.0.0.1:27123`)  | නැත           |
-| `vault_path`      | vault නාමාවලියට නිරපේක්ෂ මාර්ගය (සමමුහුර්ත කිරීම සඳහා) | නැත           |
-| `webdav_username` | ජනනය කළ WebDAV පරිශීලක නාමය (vault සමමුහුර්ත කිරීම)    | නැත           |
-| `webdav_password` | ජනනය කළ WebDAV මුරපදය (vault සමමුහුර්ත කිරීම)          | ඔව්           |
-| `webdav_enabled`  | WebDAV vault සමමුහුර්ත කිරීම සබල කර තිබේද යන්න         | නැත           |
+| යතුර              | අරමුණ                                                            | සංකේතනය කර ඇත |
+| ----------------- | ---------------------------------------------------------------- | ------------- |
+| `api_key`         | දේශීය REST API දරන්නාගේ ටෝකනය                                    | ඔව්           |
+| `base_url`        | REST පාදය URL (පෙරනිමි `http://127.0.0.1:27123`)                 | නැත           |
+| `vault_path`      | සුරක්ෂිතාගාර නාමාවලිය වෙත නිරපේක්ෂ මාර්ගය (සමමුහුර්ත කිරීම සඳහා) | නැත           |
+| `webdav_username` | ජනනය කරන ලද WebDAV පරිශීලක නාමය (vault sync)                     | නැත           |
+| `webdav_password` | ජනනය කරන ලද WebDAV මුරපදය (vault sync)                           | ඔව්           |
+| `webdav_enabled`  | WebDAV vault සමමුහුර්ත කිරීම සබල කර තිබේද යන්න                   | නැත           |
 
-### REST හරහා වින්යාස කිරීම
+### REST හරහා වින්‍යාස කරන්න
 
 ```bash
-# Local REST API ටෝකනය සුරකින්න + වලංගු කරන්න (POST විසින් තත්ත්ව පරීක්ෂාවක් හරහා වලංගු කරයි)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# සම්බන්ධතා තත්ත්වය පරීක්ෂා කරන්න (connected, hasToken, baseUrl, vaultPath ආපසු ලබා දෙයි)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# විසන්ධි කරන්න (ගබඩා කළ ටෝකනය ඉවත් කරයි)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-සියලු ක්රම සඳහා උපකරණ පුවරු සත්යාපනය අවශ්ය වේ. `POST` විසින් `27124` වරායේ ඇති ඕනෑම URL එකක්
-ප්රතික්ෂේප කරන අතර, දත්ත ස්ථිරව ගබඩා කිරීමට පෙර Local REST API තත්ත්ව අන්ත ලක්ෂ්යය ඇමතීමෙන් ටෝකනය වලංගු කරයි.
+සියලුම ක්‍රමවලට උපකරණ පුවරු සත්‍යාපනය අවශ්‍ය වේ. `POST` `27124` වරායේ ඕනෑම URL ප්‍රතික්ෂේප කරන අතර දිගටම පැවතීමට පෙර දේශීය REST API තත්ත්‍ව අන්ත ලක්ෂ්‍යය ඇමතීමෙන් ටෝකනය වලංගු කරයි.
 
-### WebDAV vault සමමුහුර්ත කිරීම
+### WebDAV සුරක්ෂිතාගාරය සමමුහුර්ත කිරීම
 
-`src/app/api/settings/obsidian/webdav/route.ts` විසින් විකල්ප WebDAV-පදනම් වූ
-vault සමමුහුර්ත කිරීමක් කළමනාකරණය කරයි (එය `src/lib/obsidianSync.ts` මඟින් ක්රියාත්මක වේ). එය සබල කිරීමෙන් OmniRoute
-දේශීය vault නාමාවලියක් වෙත යොමු කර, අහඹු WebDAV පරිශීලක නාම/මුරපද යුගලයක් නිර්මාණය කරයි:
+`src/app/api/settings/obsidian/webdav/route.ts` විකල්ප WebDAV පිටුබලය සහිත vault සමමුහුර්තකරණයක් කළමනාකරණය කරයි ( `src/lib/obsidianSync.ts` මගින් මෙහෙයවනු ලැබේ). එය සක්‍රීය කිරීමෙන් දේශීය සුරක්ෂිතාගාර නාමාවලියක OmniRoute ලකුණු කර අහඹු WebDAV username/password යුගලයක් මින්ට් කරයි:
 
 ```bash
-# vault නාමාවලියක් සඳහා WebDAV සමමුහුර්ත කිරීම සබල කරන්න (පරිශීලක නාමයක්/මුරපදයක් නිර්මාණය කරයි)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# WebDAV සමමුහුර්ත කිරීමේ තත්ත්වය ලබා ගන්න (අක්තපත්ර ආපසු ලබා දෙන්නේ සබල කර ඇති විට පමණි)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# WebDAV සමමුහුර්ත කිරීම අබල කරන්න (අක්තපත්ර + කළමනාකරණය කළ .stignore ඉවත් කරයි)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
-### API යතුරකට වෙන් වූ සන්දර්භ මූලාශ්රය (විකල්ප)
+### ආරක්ෂාව සහ ප්‍රවාහනය
 
-`api_key_context_sources` වගුව
-(`src/lib/db/apiKeyContextSources.ts`) හරහා Obsidian වින්යාසය **එක් එක් API යතුරට වෙන්ව** සීමා කළ හැක. MCP ඇමතුමක සත්යාපනය කළ API
-key id එකක් ඇති විට, `getObsidianConfigForApiKey()` එම යතුරටම අයත් token/base-URL/vault-path
-(`source: "api_key"`) ප්රමුඛ කරගන්නා අතර, එය නොමැති නම් ගෝලීය වින්යාසය (`source: "global"`) භාවිත කරයි.
+WebDAV සත්‍යාපනය එක් IP අසාර්ථක ලුහුබැඳීම සහ අගුලු දැමීම බලාත්මක කරයි (තත්පර 60 ක කවුළුවක් තුළ අසාර්ථක උත්සාහයන් 10 ක් `429 Too Many Requests` සහ `Retry-After` සමඟ මිනිත්තු 5 ක අගුලු දැමීමක් සිදු කරයි). WebDAV මූලික සත්‍යාපන අක්තපත්‍ර සම්ප්‍රේෂණය කරන බැවින්, TLS අවසන් කිරීම (හෝ Tailscale හෝ Cloudflare උමග වැනි ආරක්ෂිත උමං මාර්ගයක් හරහා ගමන් කිරීම) ලූප්බැක් පිටතින් WebDAV අන්ත ලක්ෂ්‍යයට ප්‍රවේශ වීමේදී දැඩි ලෙස නිර්දේශ කෙරේ.
 
-සමමුහුර්ත නොවන MCP මෙවලම්වලට මෙම වින්යාසය කියවීමට පෙර විසඳාගත් ඇමතුම්කරු අනන්යතාවක් අවශ්ය වේ.
-අනන්යතාවක් නොමැති ඇමතුම්කරුවෙකුට `Obsidian API token not configured` ලැබෙන අතර කිසිදු vault
-ඉල්ලීමක් නොයවයි. HTTP ඇමතුම්කරුවන් ඔවුන්ගේ ඉල්ලීම් අක්තපත්ර හරහා විසඳනු ලැබේ; stdio ඇමතුම්කරුවන්
-`OMNIROUTE_API_KEY` හෝ `ROUTER_API_KEY` හරහා විසඳිය හැක. විසඳා නොගත් HTTP ඇමතුම්කරුවෙකුට
-සේවාදායකයේ පරිසර අනන්යතාව උරුම කරගත නොහැක. Placeholder ID පමණක් ප්රවේශයට අවසර නොදෙයි;
-`env-key` වෙත විසඳෙන වලංගු පරිසර අක්තපත්රයක් සඳහා සහය තවදුරටත් පවතී.
-එක් යතුරකට වෙන් වූ Obsidian වින්යාසයක් නොමැති සත්යාපනය කළ යතුරු සඳහා ගෝලීය fallback එක තවදුරටත් පවතී.
-`obsidian_sync_*` මෙවලම් හතර තමන්ගේ වෙන් වූ සමමුහුර්ත-ටෝකන හැසිරීම දිගටම භාවිත කරයි.
+### එක්-ඒපීඅයි-යතුරු සන්දර්භ මූලාශ්‍රය (විකල්ප)
+
+Obsidian config විෂය පථය කළ හැක** API යතුරකට** `api_key_context_sources` වගුව හරහා (`src/lib/db/apiKeyContextSources.ts`). MCP ඇමතුමක් සත්‍යාපනය කළ API යතුරු හැඳුනුම්පතක් රැගෙන යන විට, `getObsidianConfigForApiKey()` එම යතුරේ ම token/base-URL/vault-path (`source: "api_key"`) ට කැමති වන අතර එසේ නොමැති නම් ගෝලීය වින්‍යාසය (`source: "global"`) වෙත ආපසු යයි.
+
+සමමුහුර්ත නොවන MCP මෙවලම් සඳහා මෙම වින්‍යාසය කියවීමට පෙර විසඳන ලද ඇමතුම් අනන්‍යතාවයක් අවශ්‍ය වේ. අනන්‍යතාවයක් නොමැති ඇමතුම්කරුවෙකුට `Obsidian API token not configured` ලැබෙන අතර සුරක්ෂිතාගාරයක් සඳහා ඉල්ලීමක් නොයවනු ලැබේ. HTTP අමතන්නන් ඔවුන්ගේ ඉල්ලීම් අක්තපත්‍ර හරහා විසඳයි; stdio අමතන්නන්ට `OMNIROUTE_API_KEY` හෝ `ROUTER_API_KEY` හරහා විසඳා ගත හැක. නොවිසඳුණු HTTP ඇමතුම්කරුවෙකුට සේවාදායකයේ පාරිසරික අනන්‍යතාවය උරුම විය නොහැක. ප්ලේස් දරණ IDs පමණක් ප්‍රවේශයට අවසර නොදේ; `env-key` වෙත නිරාකරණය වන වලංගු පාරිසරික අක්තපත්‍රයක් සහය දක්වයි. එක්-යතුර Obsidian වින්‍යාසයකින් තොරව සත්‍යාපිත යතුරු ගෝලීය පසුබෑම රඳවා ගනී. `obsidian_sync_*` මෙවලම් හතර ඔවුන්ගේ වෙනම සමමුහුර්ත-ටෝකන් හැසිරීම් තබා ගනී.
 
 ## MCP මෙවලම් (22)
 

@@ -30,89 +30,67 @@ kasa senkronizasyonunu koordine edebilir.
   ve Tailscale biçimini belirten, kullanıcı dostu bir **"Obsidian'a ulaşılamıyor" ipucu**.
 - Boşluk/eğik çizgi içeren not yollarının güvenli olması için kasaya göreli **yol kodlama**.
 
-## Kurulum
+## Kurmak
 
-Obsidian tokeni veya temel URL için **ortam değişkeni yoktur** — her ikisi de
-`src/lib/db/obsidian.ts` aracılığıyla SQLite `key_value` tablosunda (`obsidian` ad alanı)
-saklanır. Token **bekleme durumunda şifrelenir** (AES-256-GCM, düz metinle geriye dönük
-uyumluluk yedeğiyle). Endpoint kontrol panelinin **Bağlam Kaynakları** sekmesinden
-(`ObsidianSourceCard`) veya ayarlar REST API'si aracılığıyla yapılandırın.
+Orada** ortam değişkeni yok** Obsidian belirteci veya URL — tabanı için her ikisi de `src/lib/db/obsidian.ts` aracılığıyla SQLite `key_value` tablosunda ( `obsidian` ad alanı) saklanır. Jeton:** dinlenme sırasında şifrelenmiş** (AES-256-GCM, düz metin geriye dönük uyumlulukla). Şuradan yapılandırın:** Bağlam Kaynakları** Uç Nokta kontrol panelinin sekmesi (`ObsidianSourceCard`) veya REST API ayarları aracılığıyla.
 
 > [!IMPORTANT]
-> **Obsidian Local REST API** eklentisi yüklenmiş ve çalışıyor olmalıdır. REST
-> arayüzü **HTTP `127.0.0.1:27123`** adresini dinler (varsayılan temel URL). `27124`
-> portu _ayrı_ bir MCP/HTTPS uç noktasıdır ve ayarlar rotası tarafından açıkça reddedilir.
-> Başka bir cihazdan bağlanıyorsanız `http://<tailscale-ip>:27123` kullanın.
+> **Obsidian Yerel REST API** eklentinin kurulu ve çalışır durumda olması gerekmektedir. REST arayüzü dinlemeye devam ediyor**HTTP `127.0.0.1:27123`** (varsayılan taban URL). Bağlantı noktası `27124`, bir _separate_ MCP/HTTPS uç noktasıdır ve ayarlar yolu tarafından açıkça reddedilir. Başka bir cihazdan bağlanıyorsanız `http://<tailscale-ip>:27123` kullanın.
 
-### Yapılandırma anahtarları (SQLite `key_value`, `obsidian` ad alanı)
+### Yapılandırma anahtarları (SQLite `key_value`, ad alanı `obsidian`)
 
 | Anahtar           | Amaç                                                    | Şifreli |
 | ----------------- | ------------------------------------------------------- | ------- |
-| `api_key`         | Local REST API bearer tokeni                            | evet    |
-| `base_url`        | REST temel URL'si (varsayılan `http://127.0.0.1:27123`) | hayır   |
-| `vault_path`      | Kasa dizininin mutlak yolu (senkronizasyon için)        | hayır   |
-| `webdav_username` | Oluşturulan WebDAV kullanıcı adı (kasa senkronizasyonu) | hayır   |
-| `webdav_password` | Oluşturulan WebDAV parolası (kasa senkronizasyonu)      | evet    |
-| `webdav_enabled`  | WebDAV kasa senkronizasyonunun etkin olup olmadığı      | hayır   |
+| `api_key`         | Yerel REST API taşıyıcı jetonu                          | Evet    |
+| `base_url`        | REST tabanı URL (varsayılan `http://127.0.0.1:27123`)   | HAYIR   |
+| `vault_path`      | Kasa dizinine giden mutlak yol (senkronizasyon için)    | HAYIR   |
+| `webdav_username` | Oluşturulan WebDAV kullanıcı adı (kasa senkronizasyonu) | HAYIR   |
+| `webdav_password` | Oluşturulan WebDAV şifresi (kasa senkronizasyonu)       | Evet    |
+| `webdav_enabled`  | WebDAV kasa senkronizasyonunun etkin olup olmadığı      | HAYIR   |
 
-### REST aracılığıyla yapılandırma
+### REST aracılığıyla yapılandırın
 
 ```bash
-# Local REST API tokenini kaydedin ve doğrulayın (POST, durum kontrolüyle doğrular)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# Bağlantı durumunu kontrol edin (connected, hasToken, baseUrl, vaultPath döndürür)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# Bağlantıyı kesin (saklanan tokeni temizler)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-Tüm yöntemler kontrol paneli kimlik doğrulaması gerektirir. `POST`, `27124` portundaki
-tüm URL'leri reddeder ve kalıcı olarak kaydetmeden önce Local REST API durum uç noktasını
-çağırarak tokeni doğrular.
+Tüm yöntemler gösterge tablosu kimlik doğrulaması gerektirir. `POST` `27124` bağlantı noktasındaki herhangi bir URL reddeder ve devam etmeden önce Yerel REST API durumu uç noktasını çağırarak belirteci doğrular.
 
 ### WebDAV kasa senkronizasyonu
 
-`src/app/api/settings/obsidian/webdav/route.ts`, isteğe bağlı WebDAV destekli bir
-kasa senkronizasyonunu yönetir (`src/lib/obsidianSync.ts` tarafından yürütülür).
-Bu özellik etkinleştirildiğinde OmniRoute yerel bir kasa dizinine yönlendirilir ve
-rastgele bir WebDAV kullanıcı adı/parola çifti oluşturulur:
+`src/app/api/settings/obsidian/webdav/route.ts` isteğe bağlı WebDAV destekli kasa senkronizasyonunu yönetir ( `src/lib/obsidianSync.ts` tarafından yönlendirilir). Etkinleştirilmesi OmniRoute yerel bir kasa dizinine yönlendirir ve rastgele bir WebDAV username/password çifti oluşturur:
 
 ```bash
-# Bir kasa dizini için WebDAV senkronizasyonunu etkinleştirin (kullanıcı adı/parola oluşturur)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# WebDAV senkronizasyon durumunu alın (kimlik bilgileri yalnızca etkinken döndürülür)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# WebDAV senkronizasyonunu devre dışı bırakın (kimlik bilgilerini ve yönetilen .stignore dosyasını temizler)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
+### Güvenlik ve Taşıma
+
+WebDAV kimlik doğrulaması, IP başına arıza izlemeyi ve kilitlemeyi zorunlu kılar (60 saniyelik bir pencere içinde 10 başarısız deneme, `429 Too Many Requests` ve `Retry-After` ile 5 dakikalık bir kilitlemeyi tetikler). WebDAV Temel kimlik doğrulama bilgilerini ilettiğinden, geridöngü dışındaki WebDAV uç noktasına erişirken TLS sonlandırılması (veya Tailscale veya Cloudflare Tüneli gibi güvenli bir tünel üzerinden yönlendirme) önemle tavsiye edilir.
+
 ### API anahtarı başına bağlam kaynağı (isteğe bağlı)
 
-Obsidian yapılandırması, `api_key_context_sources` tablosu
-(`src/lib/db/apiKeyContextSources.ts`) aracılığıyla **API anahtarı başına**
-kapsamlandırılabilir. Bir MCP çağrısı kimliği doğrulanmış bir API anahtarı kimliği
-taşıdığında `getObsidianConfigForApiKey()`, o anahtarın kendi tokenini/temel URL'sini/kasa
-yolunu (`source: "api_key"`) tercih eder; aksi takdirde genel yapılandırmaya
-(`source: "global"`) geri döner.
+Obsidian yapılandırmasının kapsamı belirlenebilir** API anahtarı başına** `api_key_context_sources` tablosu (`src/lib/db/apiKeyContextSources.ts`) aracılığıyla. Bir MCP çağrısı, kimliği doğrulanmış bir API anahtar kimliği taşıdığında, `getObsidianConfigForApiKey()` bu anahtarın kendi token/base-URL/vault-path (`source: "api_key"`) tercih eder ve aksi takdirde genel yapılandırmaya (`source: "global"`) geri döner.
 
-Senkronizasyon dışı MCP araçları, bu yapılandırmayı okumadan önce çözümlenmiş bir çağıran
-kimliği gerektirir. Kimliği olmayan bir çağıran `Obsidian API token not configured`
-yanıtını alır ve hiçbir kasa isteği gönderilmez. HTTP çağıranları istek kimlik bilgileri
-üzerinden çözümlenir; stdio çağıranları `OMNIROUTE_API_KEY` veya `ROUTER_API_KEY`
-üzerinden çözümlenebilir. Çözümlenemeyen bir HTTP çağıranı, sunucunun ortam kimliğini
-devralamaz. Yer tutucu kimlikler tek başına erişim yetkisi vermez; `env-key` değerine
-çözümlenen geçerli bir ortam kimlik bilgisi desteklenmeye devam eder. API anahtarına özel
-Obsidian yapılandırması bulunmayan kimliği doğrulanmış anahtarlar, genel yapılandırmaya
-geri dönme davranışını korur. Dört `obsidian_sync_*` aracı, ayrı senkronizasyon tokeni
-davranışını korur.
+Senkronize olmayan MCP araçları, bu yapılandırmayı okumadan önce çözümlenmiş bir arayan kimliği gerektirir. Kimliği olmayan bir arayan `Obsidian API token not configured` alır ve hiçbir kasa isteği gönderilmez. HTTP arayanları istek kimlik bilgileri aracılığıyla çözer; stdio arayanlar `OMNIROUTE_API_KEY` veya `ROUTER_API_KEY` aracılığıyla çözümleyebilirler. Çözümlenmemiş bir HTTP arayan, sunucunun ortam kimliğini devralamaz. Yer tutucu IDs tek başına erişime izin vermez; `env-key` çözümlenen geçerli bir ortam kimlik bilgisi desteklenmeye devam eder. Anahtar başına Obsidian yapılandırması olmayan kimliği doğrulanmış anahtarlar genel geri dönüşü korur. Dört `obsidian_sync_*` aracı, ayrı senkronizasyon belirteci davranışlarını korur.
 
 ## MCP araçları (22)
 

@@ -30,78 +30,65 @@ OmniRoute 将 **Obsidian** 仓库连接为**上下文源**——这是一个本�
 
 ## 设置
 
-Obsidian 令牌或基础 URL **没有对应的环境变量**——二者均通过
-`src/lib/db/obsidian.ts` 存储在 SQLite 的 `key_value` 表（命名空间为 `obsidian`）中。
-令牌会进行**静态加密**（AES-256-GCM，并提供明文向后兼容回退）。可通过 Endpoint
-仪表板的 **Context Sources** 选项卡（`ObsidianSourceCard`）或设置 REST API 进行配置。
+有**没有环境变量**对于Obsidian令牌或基础URL —两者都通过`src/lib/db/obsidian.ts`存储在SQLite `key_value`表（命名空间`obsidian`）中。令牌是**静态加密**（AES-256-GCM，带有纯文本向后兼容后备）。配置从**上下文来源**端点仪表板 (`ObsidianSourceCard`) 选项卡，或通过设置REST API。
 
 > [!IMPORTANT]
-> 必须安装并运行 **Obsidian Local REST API** 插件。其 REST
-> 接口监听 **HTTP `127.0.0.1:27123`**（默认基础 URL）。端口 `27124`
-> 是一个_独立的_ MCP/HTTPS 端点，设置路由会明确拒绝该端口。
-> 如果从其他设备连接，请使用 `http://<tailscale-ip>:27123`。
+> 这**Obsidian本地REST API**插件必须安装并运行。它的REST接口监听**HTTP `127.0.0.1:27123`** （默认基础URL）。端口`27124`是一个单独的MCP/HTTPS端点，并且被设置路由明确拒绝。如果从其他设备连接，请使用`http://<tailscale-ip>:27123`。
 
-### 配置键（SQLite `key_value`，命名空间为 `obsidian`）
+### 配置键（SQLite `key_value`、命名空间`obsidian`）
 
-| 键                | 用途                                             | 是否加密 |
-| ----------------- | ------------------------------------------------ | -------- |
-| `api_key`         | Local REST API 持有者令牌                        | 是       |
-| `base_url`        | REST 基础 URL（默认为 `http://127.0.0.1:27123`） | 否       |
-| `vault_path`      | 仓库目录的绝对路径（用于同步）                   | 否       |
-| `webdav_username` | 生成的 WebDAV 用户名（仓库同步）                 | 否       |
-| `webdav_password` | 生成的 WebDAV 密码（仓库同步）                   | 是       |
-| `webdav_enabled`  | 是否启用 WebDAV 仓库同步                         | 否       |
+| 钥匙              | 目的                                         | 加密的 |
+| ----------------- | -------------------------------------------- | ------ |
+| `api_key`         | 本地REST API不记名令牌                       | 是的   |
+| `base_url`        | REST基础URL （默认`http://127.0.0.1:27123`） | 不     |
+| `vault_path`      | Vault 目录的绝对路径（用于同步）             | 不     |
+| `webdav_username` | 生成的WebDAV用户名（Vault 同步）             | 不     |
+| `webdav_password` | 生成的WebDAV密码（Vault 同步）               | 是的   |
+| `webdav_enabled`  | 是否启用WebDAV同步                           | 不     |
 
-### 通过 REST 配置
+### 通过REST配置
 
 ```bash
-# 保存并验证 Local REST API 令牌（POST 通过状态检查进行验证）
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# 检查连接状态（返回 connected、hasToken、baseUrl、vaultPath）
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# 断开连接（清除已存储的令牌）
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-所有方法均要求通过仪表板身份验证。`POST` 会拒绝端口为 `27124` 的任何 URL，
-并会在持久化之前，通过调用 Local REST API 状态端点来验证令牌。
+所有方法都需要仪表板身份验证。 `POST`拒绝端口`27124`上的任何URL ，并在持久之前通过调用本地REST API状态端点来验证令牌。
 
-### WebDAV 仓库同步
+### WebDAV金库同步
 
-`src/app/api/settings/obsidian/webdav/route.ts` 管理可选的、由 WebDAV 支持的
-仓库同步（由 `src/lib/obsidianSync.ts` 驱动）。启用后，它会将 OmniRoute 指向
-本地仓库目录，并生成一对随机的 WebDAV 用户名和密码：
+`src/app/api/settings/obsidian/webdav/route.ts`管理可选的 WebDAV 支持的保管库同步（由`src/lib/obsidianSync.ts`驱动）。启用它会将OmniRoute指向本地保管库目录并生成随机WebDAV username/password对：
 
 ```bash
-# 为仓库目录启用 WebDAV 同步（生成用户名和密码）
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# 获取 WebDAV 同步状态（仅在启用时返回凭据）
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# 禁用 WebDAV 同步（清除凭据和托管的 .stignore）
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
-### 按 API 密钥配置上下文源（可选）
+### 安全与交通
 
-可以通过 `api_key_context_sources` 表按 **API 密钥**限定 Obsidian 配置的作用域
-（`src/lib/db/apiKeyContextSources.ts`）。当 MCP 调用携带经过身份验证的 API
-密钥 ID 时，`getObsidianConfigForApiKey()` 会优先使用该密钥自己的令牌、基础 URL
-和仓库路径（`source: "api_key"`），否则回退到全局配置（`source: "global"`）。
+WebDAV身份验证强制执行每个 IP 的故障跟踪和锁定（60 秒窗口内 10 次失败尝试会触发`429 Too Many Requests`和`Retry-After`的 5 分钟锁定）。由于WebDAV传输基本身份验证凭据，因此强烈建议在访问环回外部的WebDAV端点时终止TLS （或通过Tailscale或Cloudflare隧道等安全隧道进行路由）。
 
-非同步 MCP 工具在读取此配置前，需要解析出调用方身份。没有身份的调用方会收到
-`Obsidian API token not configured`，且不会发送仓库请求。HTTP 调用方通过其请求凭据
-解析身份；stdio 调用方可以通过 `OMNIROUTE_API_KEY` 或 `ROUTER_API_KEY` 解析身份。
-无法解析身份的 HTTP 调用方不能继承服务器的环境身份。仅有占位符 ID 并不能授权访问；
-仍支持能够解析为 `env-key` 的有效环境凭据。没有按密钥配置 Obsidian 的已验证密钥仍会
-回退到全局配置。四个 `obsidian_sync_*` 工具继续使用各自独立的同步令牌行为。
+### 每个 API 密钥上下文源（可选）
+
+Obsidian配置可以限定范围**每个API密钥**通过`api_key_context_sources`表 (`src/lib/db/apiKeyContextSources.ts`)。当MCP调用携带经过身份验证的API密钥 ID 时， `getObsidianConfigForApiKey()`更喜欢该密钥自己的token/base-URL/vault-path (`source: "api_key"`)，否则回退到全局配置 (`source: "global"`)。
+
+非同步MCP工具在读取此配置之前需要解析调用者身份。没有身份的调用者会收到`Obsidian API token not configured`，并且不会发送保管库请求。 HTTP调用者通过其请求凭证进行解析； stdio 调用者可以通过`OMNIROUTE_API_KEY`或`ROUTER_API_KEY`进行解析。未解析的HTTP调用者无法继承服务器的环境标识。占位符IDs单独不授权访问；仍然支持解析为`env-key`有效环境凭证。没有每个密钥Obsidian配置的经过身份验证的密钥保留全局回退。四个`obsidian_sync_*`工具保持其单独的同步令牌行为。
 
 ## MCP 工具 (22)
 

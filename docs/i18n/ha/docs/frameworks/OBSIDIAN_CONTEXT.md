@@ -30,83 +30,67 @@ Abokin cinikin (`src/lib/obsidian/api.ts`) yana lulluɓe Local REST API da:
   tashar sadarwa da ake yawan yi (HTTP a `27123`, **ba** ƙarshen MCP da ke `27124` ba) da tsarin Tailscale.
 - **Tsarawa ta musamman ga hanyoyin fayil** masu dangantaka da rumbu, domin hanyoyin bayanan rubutu masu sarari/slashes su kasance amintattu.
 
-## Saitawa
+## Saita
 
-Babu **environment variable** don token na Obsidian ko base URL — dukansu ana
-adana su a teburin SQLite `key_value` (namespace `obsidian`) ta hanyar
-`src/lib/db/obsidian.ts`. Ana **rufe token ɗin yayin ajiya** (AES-256-GCM, tare da
-madadin dacewa da tsohon tsarin plaintext). Yi saitin daga shafin **Context Sources** na
-dashboard ɗin Endpoint (`ObsidianSourceCard`), ko ta hanyar REST API na saituna.
+Akwai** babu canjin yanayi** don alamar Obsidian ko tushe URL — duka ana adana su a cikin tebur SQLite `key_value` namespace `obsidian`) ta hanyar `src/lib/db/obsidian.ts`. Alamar ita ce** rufaffen lokacin hutawa** (AES-256-GCM, tare da bayyanannen rubutu a baya-kwatanta koma baya). Sanya daga** Tushen Magana** shafin dashboard ɗin Ƙarshen (`ObsidianSourceCard`), ko ta hanyar saitunan REST API.
 
 > [!IMPORTANT]
-> Dole ne a girka plugin ɗin **Obsidian Local REST API** kuma yana aiki. REST
-> interface ɗinsa yana sauraro a **HTTP `127.0.0.1:27123`** (tsohon base URL). Port `27124`
-> endpoint ne na MCP/HTTPS _na daban_ kuma hanyar saituna tana ƙin karɓarsa kai tsaye.
-> Idan ana haɗawa daga wata na'ura, yi amfani da `http://<tailscale-ip>:27123`.
+> The**Obsidian Local REST API** plugin dole ne a shigar da aiki. Ƙaddamarwar REST sa yana saurare**HTTP `127.0.0.1:27123`** (Tsoffin tushen URL). Port `27124` wuri ne na ƙarshe na _separate_ MCP/HTTPS kuma hanyar saituna ta ƙi shi. Idan ana haɗawa daga wata na'ura, yi amfani da `http://<tailscale-ip>:27123`.
 
-### Maɓallan saiti (SQLite `key_value`, namespace `obsidian`)
+### Maɓallan daidaitawa (SQLite `key_value`, namespace `obsidian`)
 
-| Maɓalli           | Manufa                                                   | An rufe |
-| ----------------- | -------------------------------------------------------- | ------- |
-| `api_key`         | Bearer token na Local REST API                           | eh      |
-| `base_url`        | REST base URL (tsoho `http://127.0.0.1:27123`)           | a'a     |
-| `vault_path`      | Cikakkiyar hanya zuwa kundin vault (don daidaitawa)      | a'a     |
-| `webdav_username` | Sunan mai amfani na WebDAV da aka samar (daidaita vault) | a'a     |
-| `webdav_password` | Kalmar sirrin WebDAV da aka samar (daidaita vault)       | eh      |
-| `webdav_enabled`  | Ko an kunna daidaita vault ta WebDAV                     | a'a     |
+| Maɓalli           | Manufar                                                    | Rufaffen |
+| ----------------- | ---------------------------------------------------------- | -------- |
+| `api_key`         | Alamar mai ɗaukar REST API na gida                         | iya      |
+| `base_url`        | REST tushe URL (default `http://127.0.0.1:27123`)          | a'a      |
+| `vault_path`      | Cikakkar hanyar zuwa ga kundin adireshin (don daidaitawa)  | a'a      |
+| `webdav_username` | Sunan mai amfani WebDAV da aka ƙirƙira (daidaitawar vault) | a'a      |
+| `webdav_password` | Ƙaddamar da kalmar sirri WebDAV (aiki tare)                | iya      |
+| `webdav_enabled`  | Ko an kunna sync WebDAV vault                              | a'a      |
 
-### Saitawa ta hanyar REST
+### Sanya ta hanyar REST
 
 ```bash
-# Ajiye + tabbatar da token na Local REST API (POST yana tabbatarwa ta hanyar duba matsayi)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# Duba matsayin haɗin kai (yana dawo da connected, hasToken, baseUrl, vaultPath)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# Cire haɗin kai (yana share token ɗin da aka adana)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-Duk hanyoyin suna buƙatar tantancewar dashboard. `POST` yana ƙin duk wani URL da ke kan port `27124`
-kuma yana tabbatar da token ta hanyar kiran status endpoint na Local REST API kafin adanawa.
+Duk hanyoyin suna buƙatar amincin dashboard. `POST` ya ƙi duk wani URL akan tashar `27124` kuma yana tabbatar da alamar ta hanyar kiran Ƙarshen matsayi na REST API na Local kafin nacewa.
 
-### Daidaita vault ta WebDAV
+### WebDAV vault sync
 
-`src/app/api/settings/obsidian/webdav/route.ts` yana sarrafa daidaita vault na zaɓi mai amfani da WebDAV
-(wanda `src/lib/obsidianSync.ts` ke tafiyarwa). Kunna shi yana nuna OmniRoute zuwa
-kundin vault na gida kuma yana ƙirƙirar bazuwar sunan mai amfani/kalmar sirri na WebDAV:
+`src/app/api/settings/obsidian/webdav/route.ts` yana sarrafa wani zaɓi na sync vault mai goyan bayan WebDAV (wanda `src/lib/obsidianSync.ts` ke jagoranta). Ƙaddamar da shi yana nuna OmniRoute a cikin kundin adireshi na gida da mints bazuwar WebDAV username/password biyu:
 
 ```bash
-# Kunna daidaita WebDAV don kundin vault (yana ƙirƙirar sunan mai amfani/kalmar sirri)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# Samo matsayin daidaita WebDAV (ana dawo da bayanan shiga ne kawai yayin da aka kunna)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# Kashe daidaita WebDAV (yana share bayanan shiga + .stignore da ake sarrafawa)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
-### Tushen mahalli na kowane API key (na zaɓi)
+### Tsaro & Sufuri
 
-Ana iya keɓance saitin Obsidian **ga kowane API key** ta hanyar teburin `api_key_context_sources`
-(`src/lib/db/apiKeyContextSources.ts`). Lokacin da kiran MCP ya ƙunshi id na API
-key da aka tantance, `getObsidianConfigForApiKey()` yana fifita token/base-URL/vault-path
-na wannan maɓallin (`source: "api_key"`), in ba haka ba ya koma ga saitin gama-gari (`source: "global"`).
+Tabbatar da WebDAV yana tilasta bin diddigin gazawar kowane-IP da kullewa (yunƙurin gazawar 10 a cikin taga na daƙiƙa 60 yana haifar da kullewar minti 5 tare da `429 Too Many Requests` da `Retry-After`). Saboda WebDAV yana watsa Asalin takaddun shaidar tabbatarwa, ƙare TLS (ko kewayawa a kan amintaccen rami kamar Tailscale ko Cloudflare Tunnel) ana ba da shawarar sosai lokacin shiga wurin ƙarshen WebDAV a waje da madauki.
 
-Kayan aikin MCP waɗanda ba na daidaitawa ba suna buƙatar sanannen asalin mai kira kafin karanta wannan saiti.
-Mai kira da ba shi da asali yana karɓar `Obsidian API token not configured`, kuma ba a aika wani buƙatar
-vault ba. Ana tantance masu kiran HTTP ta hanyar bayanan shaidar buƙatarsu; ana iya tantance masu kiran stdio
-ta hanyar `OMNIROUTE_API_KEY` ko `ROUTER_API_KEY`. Mai kiran HTTP da ba a iya tantancewa ba
-ba zai iya gaji asalin environment na uwar garken ba. Placeholder IDs kaɗai ba sa ba da izinin
-samun dama; ingantaccen bayanin shaidar environment da ke kaiwa zuwa `env-key` har yanzu ana tallafa masa.
-Maɓallan da aka tantance waɗanda ba su da saitin Obsidian na musamman ga maɓalli suna ci gaba da amfani da saitin gama-gari a matsayin madadi.
-Kayan aikin `obsidian_sync_*` guda huɗu suna ci gaba da amfani da halayen sync-token nasu na daban.
+### Tushen mahallin Per-API-key (na zaɓi)
+
+Obsidian config za a iya iyaka** da makullin API** ta hanyar tebur `api_key_context_sources` (`src/lib/db/apiKeyContextSources.ts`). Lokacin da kiran MCP ya ɗauki ingantacciyar maɓalli API, `getObsidianConfigForApiKey()` ya fi son wannan maɓalli nasa token/base-URL/vault-path (`source: "api_key"`) kuma in ba haka ba yana komawa ga tsarin duniya (`source: "global"`).
+
+Kayan aikin MCP da ba a daidaita su ba yana buƙatar tantance ainihin mai kira kafin karanta wannan saitin. Mai kira ba tare da ainihi ba yana karɓar `Obsidian API token not configured`, kuma ba a aika buƙatar vault ba. masu kiran HTTP suna warware ta hanyar buƙatun su; stdio masu kiran suna iya warwarewa ta hanyar `OMNIROUTE_API_KEY` ko `ROUTER_API_KEY`. Mai kiran HTTP wanda ba a warware shi ba ba zai iya gadon asalin muhallin uwar garken ba. IDs mai sanya wuri shi kaɗai baya ba da izinin shiga; ingantaccen ingancin muhalli wanda ya yanke shawarar zuwa `env-key` ya kasance yana tallafawa. Ingantattun maɓallan ba tare da saitin kowane maɓalli Obsidian suna riƙe da koma baya a duniya ba. Kayan aikin `obsidian_sync_*` guda huɗu suna kiyaye dabi'un daidaitawa daban-daban.
 
 ## Kayan aikin MCP (22)
 

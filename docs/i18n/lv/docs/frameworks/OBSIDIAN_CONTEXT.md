@@ -32,81 +32,65 @@ Klients (`src/lib/obsidian/api.ts`) ietver Local REST API ar:
 
 ## Iestatīšana
 
-Obsidian pilnvarai vai bāzes URL **nav vides mainīgā** — abi tiek
-glabāti SQLite tabulā `key_value` (nosaukumvietā `obsidian`), izmantojot
-`src/lib/db/obsidian.ts`. Pilnvara glabāšanas laikā ir **šifrēta** (AES-256-GCM ar
-atpakaļsaderības atkāpšanos uz vienkāršu tekstu). Konfigurējiet Endpoint informācijas paneļa
-cilnē **Konteksta avoti** (`ObsidianSourceCard`) vai izmantojot iestatījumu REST API.
+Ir** nav vides mainīgā** Obsidian marķierim vai bāzes URL — abi tiek saglabāti SQLite `key_value` tabulā (nosaukumtelpa `obsidian`), izmantojot `src/lib/db/obsidian.ts`. Žetons ir** šifrēts miera stāvoklī** (AES-256-GCM, ar atkāpšanos no vienkārša teksta). Konfigurēt no** Konteksta avoti** Endpoint informācijas paneļa (`ObsidianSourceCard`) cilnē vai, izmantojot iestatījumus REST API.
 
 > [!IMPORTANT]
-> Spraudnim **Obsidian Local REST API** jābūt instalētam un palaistam. Tā REST
-> saskarne klausās adresē **HTTP `127.0.0.1:27123`** (noklusējuma bāzes URL). Ports `27124`
-> ir _atsevišķs_ MCP/HTTPS galapunkts, un iestatījumu maršruts to nepārprotami noraida.
-> Ja veidojat savienojumu no citas ierīces, izmantojiet `http://<tailscale-ip>:27123`.
+> The**Obsidian Vietējais REST API** spraudnim ir jābūt instalētam un jādarbojas. Tā REST interfeiss klausās**HTTP `127.0.0.1:27123`** (noklusējuma bāze URL). Ports `27124` ir _atsevišķs_ MCP/HTTPS galapunkts, un iestatījumu maršruts to nepārprotami noraida. Ja veidojat savienojumu no citas ierīces, izmantojiet `http://<tailscale-ip>:27123`.
 
 ### Konfigurācijas atslēgas (SQLite `key_value`, nosaukumvieta `obsidian`)
 
-| Atslēga           | Nolūks                                                       | Šifrēts |
-| ----------------- | ------------------------------------------------------------ | ------- |
-| `api_key`         | Local REST API nesēja pilnvara                               | jā      |
-| `base_url`        | REST bāzes URL (noklusējums `http://127.0.0.1:27123`)        | nē      |
-| `vault_path`      | Absolūtais ceļš uz glabātuves direktoriju (sinhronizācijai)  | nē      |
-| `webdav_username` | Ģenerētais WebDAV lietotājvārds (glabātuves sinhronizācijai) | nē      |
-| `webdav_password` | Ģenerētā WebDAV parole (glabātuves sinhronizācijai)          | jā      |
-| `webdav_enabled`  | Vai WebDAV glabātuves sinhronizācija ir iespējota            | nē      |
+| Atslēga           | Mērķis                                                      | Šifrēts |
+| ----------------- | ----------------------------------------------------------- | ------- |
+| `api_key`         | Vietējais REST API nesēja marķieris                         | jā      |
+| `base_url`        | REST base URL (noklusējuma `http://127.0.0.1:27123`)        | nē      |
+| `vault_path`      | Absolūtais ceļš uz glabātuves direktoriju (sinhronizācijai) | nē      |
+| `webdav_username` | Ģenerēts WebDAV lietotājvārds (vault sinhronizācija)        | nē      |
+| `webdav_password` | Ģenerēta WebDAV parole (glabātuves sinhronizācija)          | jā      |
+| `webdav_enabled`  | Vai ir iespējota WebDAV Vault sinhronizācija                | nē      |
 
-### Konfigurēšana, izmantojot REST
+### Konfigurējiet, izmantojot REST
 
 ```bash
-# Saglabā un validē Local REST API pilnvaru (POST validē, veicot statusa pārbaudi)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# Pārbauda savienojuma statusu (atgriež connected, hasToken, baseUrl, vaultPath)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# Atvieno (notīra saglabāto pilnvaru)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-Visām metodēm nepieciešama informācijas paneļa autentifikācija. `POST` noraida jebkuru URL ar portu `27124`
-un pirms saglabāšanas validē pilnvaru, izsaucot Local REST API statusa galapunktu.
+Visām metodēm ir nepieciešama informācijas paneļa autentifikācija. `POST` noraida jebkuru URL portā `27124` un apstiprina marķieri, izsaucot lokālo REST API statusa galapunktu, pirms tas tiek turpināts.
 
-### WebDAV glabātuves sinhronizācija
+### WebDAV velves sinhronizācija
 
-`src/app/api/settings/obsidian/webdav/route.ts` pārvalda neobligātu, uz WebDAV balstītu
-glabātuves sinhronizāciju (ko darbina `src/lib/obsidianSync.ts`). To iespējojot, OmniRoute tiek norādīts
-lokāls glabātuves direktorijs un tiek ģenerēts nejaušs WebDAV lietotājvārda/paroles pāris:
+`src/app/api/settings/obsidian/webdav/route.ts` pārvalda izvēles WebDAV atbalstītu glabātuves sinhronizāciju (ko vada `src/lib/obsidianSync.ts`). Iespējojot to, OmniRoute tiek norādīts vietējā glabātuves direktorijā un tiek izveidots nejaušs WebDAV username/password pāris:
 
 ```bash
-# Iespējo WebDAV sinhronizāciju glabātuves direktorijam (ģenerē lietotājvārdu/paroli)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# Iegūst WebDAV sinhronizācijas statusu (akreditācijas dati tiek atgriezti tikai tad, kad tā ir iespējota)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# Atspējo WebDAV sinhronizāciju (notīra akreditācijas datus un pārvaldīto .stignore)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
-### Katras API atslēgas konteksta avots (neobligāts)
+### Drošība un transports
 
-Obsidian konfigurācijas tvērumu var noteikt **katrai API atslēgai** atsevišķi, izmantojot tabulu `api_key_context_sources`
-(`src/lib/db/apiKeyContextSources.ts`). Kad MCP izsaukums ietver autentificētu API
-atslēgas ID, `getObsidianConfigForApiKey()` dod priekšroku šīs atslēgas pilnvarai/bāzes URL/glabātuves ceļam
-(`source: "api_key"`), bet pretējā gadījumā izmanto globālo konfigurāciju (`source: "global"`).
+WebDAV autentifikācija nodrošina katra IP kļūmju izsekošanu un bloķēšanu (10 neveiksmīgi mēģinājumi 60 sekunžu logā aktivizē 5 minūšu bloķēšanu ar `429 Too Many Requests` un `Retry-After`). Tā kā WebDAV pārsūta pamata autentifikācijas akreditācijas datus, piekļūstot WebDAV galapunktam ārpus cilpas, ļoti ieteicams pārtraukt TLS (vai maršrutēšanu pa drošu tuneli, piemēram, Tailscale vai Cloudflare tuneli).
 
-MCP rīkiem, kas nav paredzēti sinhronizācijai, pirms šīs konfigurācijas nolasīšanas ir nepieciešama noskaidrota izsaucēja identitāte.
-Izsaucējs bez identitātes saņem `Obsidian API token not configured`, un neviens glabātuves
-pieprasījums netiek nosūtīts. HTTP izsaucēju identitāte tiek noskaidrota, izmantojot to pieprasījuma akreditācijas datus; stdio izsaucēju
-identitāti var noskaidrot, izmantojot `OMNIROUTE_API_KEY` vai `ROUTER_API_KEY`. Neatpazīts HTTP izsaucējs
-nevar mantot servera vides identitāti. Ar viettura ID vien nepietiek, lai autorizētu
-piekļuvi; joprojām tiek atbalstīti derīgi vides akreditācijas dati, kas tiek sasaistīti ar `env-key`.
-Autentificētām atslēgām bez katrai atslēgai specifiskas Obsidian konfigurācijas tiek saglabāta atkāpšanās uz globālo konfigurāciju.
-Četri `obsidian_sync_*` rīki saglabā savu atsevišķo sinhronizācijas pilnvaru darbību.
+### Katras API atslēgas konteksta avots (neobligāti)
+
+Obsidian config var būt tvērums** katrai API atslēgai** izmantojot `api_key_context_sources` tabulu (`src/lib/db/apiKeyContextSources.ts`). Ja MCP izsaukumam ir autentificēts API atslēgas ID, `getObsidianConfigForApiKey()` dod priekšroku pašas atslēgas token/base-URL/vault-path (`source: "api_key"`) un citos gadījumos atgriežas globālajā konfigurācijā (`source: "global"`).
+
+Nesinhronizētiem MCP rīkiem pirms šīs konfigurācijas lasīšanas ir jāatrisina zvanītāja identitāte. Zvanītājs bez identitātes saņem `Obsidian API token not configured`, un glabātuves pieprasījums netiek nosūtīts. HTTP zvanītāji atrisina, izmantojot savus pieprasījuma akreditācijas datus; stdio zvanītāji var atrisināt, izmantojot `OMNIROUTE_API_KEY` vai `ROUTER_API_KEY`. Neatrisināts HTTP zvanītājs nevar mantot servera vides identitāti. Vietturis IDs vien neautorizē piekļuvi; derīgs vides akreditācijas dati, kas atrisina `env-key` joprojām tiek atbalstīti. Autentificētas atslēgas bez katras atslēgas Obsidian konfigurācijas saglabā globālo atkāpšanos. Četri `obsidian_sync_*` rīki saglabā savu atsevišķu sinhronizācijas marķiera darbību.
 
 ## MCP rīki (22)
 

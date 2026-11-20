@@ -29,83 +29,67 @@ Onye ahịa ahụ (`src/lib/obsidian/api.ts`) na-ekpuchi Local REST API site na:
   (HTTP na `27123`, **ọ bụghị** endpoint MCP dị na `27124`) yana ụdị Tailscale.
 - **Nkodị ụzọ dabere na vault** ka ụzọ ndetu nwere oghere/slash wee dị nchebe.
 
-## Nhazi
+## Melite
 
-Enweghị **environment variable ọ bụla** maka token Obsidian ma ọ bụ URL ntọala — a na-echekwa ha abụọ
-na tebụl SQLite `key_value` (namespace `obsidian`) site na
-`src/lib/db/obsidian.ts`. A na-**ezobe token ahụ mgbe echekwara ya** (AES-256-GCM, yana
-plaintext fallback maka ndakọrịta na ụdị ochie). Hazie ya site na taabụ **Context Sources** nke
-dashboard Endpoint (`ObsidianSourceCard`), ma ọ bụ site na settings REST API.
+Enwere** enweghị mgbanwe gburugburu ebe obibi** maka akara Obsidian ma ọ bụ ntọala URL — a na-echekwa ha abụọ na tebụl `key_value` SQLite (namespace `obsidian`) site na `src/lib/db/obsidian.ts`. Ihe ngosi bụ** ezoro ezo na izu ike** (AES-256-GCM, nwere ederede doro anya azụ-compat ọdịda). Hazie site na** Isi mmalite okwu** tab nke dashboard Endpoint (`ObsidianSourceCard`), ma ọ bụ site na ntọala REST API.
 
 > [!IMPORTANT]
-> A ghaghị ịwụnye plugin **Obsidian Local REST API** ma mee ka ọ na-arụ ọrụ. REST
-> interface ya na-ege ntị na **HTTP `127.0.0.1:27123`** (URL ntọala ndabara). Port `27124`
-> bụ endpoint MCP/HTTPS _dị iche_ ma settings route na-ajụ ya kpọmkwem.
-> Ọ bụrụ na ị na-ejikọ site na ngwaọrụ ọzọ, jiri `http://<tailscale-ip>:27123`.
+> Nke**Obsidian Mpaghara REST API** plugin ga-arụnyere na-agba ọsọ. Ya REST interface na-ege ntị**HTTP `127.0.0.1:27123`** (ndabere ndabere URL). Port `27124` bụ njedebe _separate_ MCP/HTTPS ma ụzọ ntọala jụrụ ya nke ọma. Ọ bụrụ na ejikọrọ na ngwaọrụ ọzọ, jiri `http://<tailscale-ip>:27123`.
 
 ### Igodo nhazi (SQLite `key_value`, namespace `obsidian`)
 
-| Igodo             | Ebumnuche                                          | E zoro ezo |
-| ----------------- | -------------------------------------------------- | ---------- |
-| `api_key`         | Token bearer nke Local REST API                    | ee         |
-| `base_url`        | URL ntọala REST (ndabara `http://127.0.0.1:27123`) | mba        |
-| `vault_path`      | Ụzọ zuru oke gaa na ndekọ vault (maka sync)        | mba        |
-| `webdav_username` | Aha njirimara WebDAV emepụtara (sync vault)        | mba        |
-| `webdav_password` | Okwuntughe WebDAV emepụtara (sync vault)           | ee         |
-| `webdav_enabled`  | Ma agbanyere sync vault WebDAV                     | mba        |
+| Igodo             | Ebumnuche                                          | ezoro ezo |
+| ----------------- | -------------------------------------------------- | --------- |
+| `api_key`         | Ihe njiri mara REST API mpaghara                   | ee        |
+| `base_url`        | REST base URL (ndabere `http://127.0.0.1:27123`)   | mba       |
+| `vault_path`      | Ụzọ zuru oke na akwụkwọ ndekọ aha (maka mmekọrịta) | mba       |
+| `webdav_username` | Mepụtara aha njirimara WebDAV (mmekọrịta vault)    | mba       |
+| `webdav_password` | Mepụta paswọọdụ WebDAV (mmekọrịta vault)           | ee        |
+| `webdav_enabled`  | Ma agbanyere WebDAV vault sync                     | mba       |
 
 ### Hazie site na REST
 
 ```bash
-# Chekwaa + nyochaa token Local REST API (POST na-enyocha site na nyocha status)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# Lelee status njikọ (na-eweghachi connected, hasToken, baseUrl, vaultPath)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# Kwụsị njikọ (na-ehichapụ token echekwara)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-Usoro niile chọrọ nkwenye njirimara dashboard. `POST` na-ajụ URL ọ bụla dị na port `27124`
-ma na-enyocha token ahụ site n'ịkpọ status endpoint nke Local REST API tupu echekwaa ya.
+Ụzọ niile chọrọ nyocha dashboard. `POST` jụrụ URL ọ bụla na ọdụ ụgbọ mmiri `27124` wee kwado akara ngosi ahụ site n'ịkpọ ebe njedebe REST API Mpaghara tupu ọ nọgide.
 
-### Sync vault WebDAV
+### WebDAV vault sync
 
-`src/app/api/settings/obsidian/webdav/route.ts` na-achịkwa sync vault nhọrọ nke
-WebDAV na-akwado (nke `src/lib/obsidianSync.ts` na-eme ka ọ rụọ ọrụ). Ịgbanye ya na-atụ OmniRoute aka na
-ndekọ vault mpaghara ma mepụta ụzọ aha njirimara/okwuntughe WebDAV na-enweghị usoro:
+`src/app/api/settings/obsidian/webdav/route.ts` na-ejikwa sync vault nke WebDAV na-akwado nhọrọ (nke `src/lib/obsidianSync.ts` na-ebute). Na-eme ka ọ tụọ OmniRoute na ndekọ ndekọ aha mpaghara wee tinye otu ụzọ WebDAV username/password random:
 
 ```bash
-# Gbanye sync WebDAV maka ndekọ vault (na-emepụta aha njirimara/okwuntughe)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# Nweta status sync WebDAV (a na-eweghachi credentials naanị mgbe agbanyere ya)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# Gbanyụọ sync WebDAV (na-ehichapụ credentials + .stignore a na-achịkwa)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
-### Context source nke API key ọ bụla (nhọrọ)
+### Nchekwa & Ụgbọ njem
 
-Enwere ike ịkpa ókè nhazi Obsidian **n'ogo API key ọ bụla** site na tebụl `api_key_context_sources`
-(`src/lib/db/apiKeyContextSources.ts`). Mgbe oku MCP nwere id API
-key ekwenyere, `getObsidianConfigForApiKey()` na-ahọrọ token/base-URL/vault-path nke key ahụ
-(`source: "api_key"`) ma ọ bụghị ya, ọ na-eji nhazi zuru ụwa ọnụ dị ka fallback (`source: "global"`).
+Nyocha WebDAV na-amanye nleba anya ọdịda na mkpochi IP ọ bụla (mgbalị 10 dara ada n'ime windo 60 nke abụọ na-ebute mkpọchi nkeji 5 na `429 Too Many Requests` na `Retry-After`). N'ihi na WebDAV na-ebufe nzere nzere Basic, ịkwụsị TLS (ma ọ bụ ịfegharị n'ọwara echedoro dị ka Tailscale ma ọ bụ Cloudflare Tunnel) ka akwadoro nke ukwuu mgbe ị na-abanye ebe njedebe WebDAV na mpụga loopback.
 
-Ngwaọrụ MCP ndị na-abụghị nke sync chọrọ ka a mata onye na-akpọ oku tupu a gụọ nhazi a.
-Onye na-akpọ oku na-enweghị njirimara ga-enweta `Obsidian API token not configured`, a gaghịkwa eziga arịrịọ
-vault ọ bụla. A na-achọpụta ndị na-akpọ oku HTTP site na credentials dị na arịrịọ ha; enwere ike ịchọpụta ndị na-akpọ oku
-stdio site na `OMNIROUTE_API_KEY` ma ọ bụ `ROUTER_API_KEY`. Onye na-akpọ oku HTTP nke a na-achọpụtaghị
-enweghị ike iketa njirimara environment nke sava ahụ. ID placeholder naanị anaghị enye ikike
-ịnweta ya; credential environment ziri ezi nke na-eduga na `env-key` ka na-akwado.
-Key ndị ekwenyere na-enweghị nhazi Obsidian nke key ahụ ka na-eji fallback zuru ụwa ọnụ.
-Ngwaọrụ anọ `obsidian_sync_*` na-edobe akparamàgwà sync-token ha dị iche.
+### Isi iyi okwu kwa-API (nhọrọ)
+
+Obsidian config nwere ike gbasaa** kwa igodo API** site na tebụl `api_key_context_sources` (`src/lib/db/apiKeyContextSources.ts`). Mgbe oku MCP na-ebu akara igodo API ziri ezi, `getObsidianConfigForApiKey()` na-ahọrọ nke ahụ token/base-URL/vault-path n'onwe ya (`source: "api_key"`) ma ọ bụghị ya na-adaghachi na nhazi ụwa (`source: "global"`).
+
+Ngwa MCP na-abụghị mmekọrịta chọrọ njirimara onye na-akpọ oku edozi tupu agụ nhazi a. Onye na-akpọ oku na-enweghị njirimara na-anata `Obsidian API token not configured`, ọ nweghịkwa arịrịọ a na-ezigaghị. HTTP ndị na-akpọ oku na-ekpebi site na nzere arịrịọ ha; Ndị na-akpọ stdio nwere ike dozie site na `OMNIROUTE_API_KEY` ma ọ bụ `ROUTER_API_KEY`. Onye na-akpọ HTTP na-edozighị edozi enweghị ike iketa njirimara gburugburu ebe nkesa. Onye na-edebe IDs naanị enyeghị ikike ịnweta; A ka na-akwado nzere gburugburu ebe kwesịrị ekwesị nke kpebiri na `env-key`. Igodo enwetara nke ọma na-enweghị nhazi Obsidian ọ bụla na-ejigide ọdịda zuru ụwa ọnụ. Ngwa `obsidian_sync_*` anọ ahụ na-edobe omume mmekọrịta-token ha dị iche.
 
 ## Ngwaọrụ MCP (22)
 

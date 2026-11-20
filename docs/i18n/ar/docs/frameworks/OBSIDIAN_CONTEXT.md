@@ -28,83 +28,67 @@
   (HTTP على `27123`، **وليس** نقطة نهاية MCP على `27124`) وصيغة Tailscale.
 - **ترميز المسارات** النسبية إلى الخزنة، بحيث تكون مسارات الملاحظات التي تحتوي على مسافات/شرطات مائلة آمنة.
 
-## الإعداد
+## يثبت
 
-لا يوجد **متغير بيئة** لرمز Obsidian أو عنوان URL الأساسي — فكلاهما
-مخزّن في جدول SQLite المسمى `key_value` (ضمن مساحة الأسماء `obsidian`) عبر
-`src/lib/db/obsidian.ts`. يكون الرمز **مشفّرًا عند التخزين** (AES-256-GCM، مع
-آلية احتياطية للتوافق مع الإصدارات السابقة تعتمد النص الصريح). يمكنك إجراء الإعداد من علامة تبويب **مصادر السياق** في
-لوحة معلومات Endpoint (`ObsidianSourceCard`)، أو عبر واجهة REST API للإعدادات.
+هنالك** لا يوجد متغير البيئة** يتم تخزين كل من رمز Obsidian أو — URL في جدول SQLite `key_value` (مساحة الاسم `obsidian`) عبر `src/lib/db/obsidian.ts`. الرمز هو** مشفرة في بقية** (AES-256-GCM، مع نص عادي احتياطي متوافق مع الإصدارات السابقة). تكوين من** مصادر السياق** علامة التبويب لوحة معلومات نقطة النهاية (`ObsidianSourceCard`)، أو عبر الإعدادات REST API.
 
 > [!IMPORTANT]
-> يجب تثبيت إضافة **Obsidian Local REST API** وتشغيلها. تستمع واجهة REST الخاصة بها
-> عبر **HTTP `127.0.0.1:27123`** (عنوان URL الأساسي الافتراضي). المنفذ `27124`
-> هو نقطة نهاية منفصلة لـ MCP/HTTPS، ويرفضه مسار الإعدادات صراحةً.
-> عند الاتصال من جهاز آخر، استخدم `http://<tailscale-ip>:27123`.
+> ال**Obsidian المحلية REST API** يجب تثبيت البرنامج المساعد وتشغيله. تستمع واجهة REST الخاصة بها**HTTP `127.0.0.1:27123`** (القاعدة الافتراضية URL). المنفذ `27124` هو نقطة نهاية _separate_ MCP/HTTPS ويتم رفضه بشكل صريح من خلال مسار الإعدادات. في حالة الاتصال من جهاز آخر، استخدم `http://<tailscale-ip>:27123`.
 
-### مفاتيح الإعداد (جدول SQLite المسمى `key_value`، مساحة الأسماء `obsidian`)
+### مفاتيح التكوين (SQLite `key_value`، مساحة الاسم `obsidian`)
 
-| المفتاح           | الغرض                                                          | مشفّر |
-| ----------------- | -------------------------------------------------------------- | ----- |
-| `api_key`         | رمز المصادقة الحامل لواجهة Local REST API                      | نعم   |
-| `base_url`        | عنوان URL الأساسي لـ REST (الافتراضي `http://127.0.0.1:27123`) | لا    |
-| `vault_path`      | المسار المطلق إلى دليل الخزنة (للمزامنة)                       | لا    |
-| `webdav_username` | اسم مستخدم WebDAV المُنشأ (مزامنة الخزنة)                      | لا    |
-| `webdav_password` | كلمة مرور WebDAV المُنشأة (مزامنة الخزنة)                      | نعم   |
-| `webdav_enabled`  | ما إذا كانت مزامنة الخزنة عبر WebDAV مُمكّنة                   | لا    |
+| مفتاح             | غاية                                                 | مشفرة |
+| ----------------- | ---------------------------------------------------- | ----- |
+| `api_key`         | رمز حامل REST API المحلي                             | نعم   |
+| `base_url`        | قاعدة REST URL ( `http://127.0.0.1:27123` الافتراضي) | لا    |
+| `vault_path`      | المسار المطلق إلى دليل المخزن (للمزامنة)             | لا    |
+| `webdav_username` | اسم مستخدم WebDAV الذي تم إنشاؤه (مزامنة المخزن)     | لا    |
+| `webdav_password` | كلمة مرور WebDAV التي تم إنشاؤها (مزامنة القبو)      | نعم   |
+| `webdav_enabled`  | ما إذا كان قد تم تمكين مزامنة WebDAV vault أم لا     | لا    |
 
-### الإعداد عبر REST
+### التكوين عبر REST
 
 ```bash
-# حفظ رمز Local REST API والتحقق من صحته (يتحقق POST عبر فحص الحالة)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# التحقق من حالة الاتصال (يعيد connected وhasToken وbaseUrl وvaultPath)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# قطع الاتصال (يمسح الرمز المخزّن)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-تتطلب جميع الطرق مصادقة لوحة المعلومات. يرفض `POST` أي عنوان URL يستخدم المنفذ `27124`
-ويتحقق من صحة الرمز عبر استدعاء نقطة نهاية الحالة في Local REST API قبل حفظه.
+تتطلب كافة الطرق مصادقة لوحة القيادة. يرفض `POST` أي URL على المنفذ `27124` ويتحقق من صحة الرمز المميز عن طريق استدعاء نقطة نهاية حالة REST API المحلية قبل الاستمرار.
 
-### مزامنة الخزنة عبر WebDAV
+### مزامنة قبو WebDAV
 
-يدير `src/app/api/settings/obsidian/webdav/route.ts` مزامنة اختيارية للخزنة
-مدعومة بـ WebDAV (وتشغّلها `src/lib/obsidianSync.ts`). يؤدي تمكينها إلى توجيه OmniRoute نحو
-دليل خزنة محلي وإنشاء زوج عشوائي من اسم المستخدم وكلمة المرور لـ WebDAV:
+يدير `src/app/api/settings/obsidian/webdav/route.ts` مزامنة اختيارية مدعومة بـ WebDAV (مدفوعة بواسطة `src/lib/obsidianSync.ts`). يؤدي تمكينه إلى توجيه OmniRoute إلى دليل قبو محلي وإصدار زوج WebDAV username/password عشوائي:
 
 ```bash
-# تمكين مزامنة WebDAV لدليل خزنة (ينشئ اسم مستخدم وكلمة مرور)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# الحصول على حالة مزامنة WebDAV (تُعاد بيانات الاعتماد فقط أثناء التمكين)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# تعطيل مزامنة WebDAV (يمسح بيانات الاعتماد وملف .stignore المُدار)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
-### مصدر سياق لكل مفتاح API (اختياري)
+### الأمن والنقل
 
-يمكن تحديد نطاق إعداد Obsidian **لكل مفتاح API** عبر جدول `api_key_context_sources`
-(`src/lib/db/apiKeyContextSources.ts`). عندما يتضمن استدعاء MCP معرّف مفتاح API تمت مصادقته،
-تفضّل `getObsidianConfigForApiKey()` الرمز وعنوان URL الأساسي ومسار الخزنة الخاصة بذلك المفتاح
-(`source: "api_key"`)؛ وإلا فإنها تستخدم الإعداد العام كخيار احتياطي (`source: "global"`).
+تفرض مصادقة WebDAV تتبع فشل كل IP وإغلاقه (10 محاولات فاشلة خلال نافذة مدتها 60 ثانية تؤدي إلى إغلاق لمدة 5 دقائق باستخدام `429 Too Many Requests` و `Retry-After`). نظرًا لأن WebDAV ينقل بيانات اعتماد المصادقة الأساسية، يوصى بشدة بإنهاء TLS (أو التوجيه عبر نفق آمن مثل Tailscale أو Cloudflare Tunnel) عند الوصول إلى نقطة نهاية WebDAV خارج الاسترجاع.
 
-تتطلب أدوات MCP غير الخاصة بالمزامنة تحديد هوية المستدعي قبل قراءة هذا الإعداد.
-يتلقى المستدعي الذي لا يملك هوية الرسالة `Obsidian API token not configured`، ولا يُرسل أي طلب
-إلى الخزنة. تُحدَّد هوية مستدعي HTTP من خلال بيانات اعتماد طلبه؛ ويمكن تحديد هوية مستدعي
-stdio عبر `OMNIROUTE_API_KEY` أو `ROUTER_API_KEY`. لا يمكن لمستدعي HTTP مجهول الهوية
-أن يرث هوية بيئة الخادم. لا تمنح المعرّفات النائبة وحدها صلاحية
-الوصول؛ ويظل استخدام بيانات اعتماد بيئية صالحة تُطابق `env-key` مدعومًا.
-تحتفظ المفاتيح التي تمت مصادقتها ولا تملك إعداد Obsidian خاصًا بكل مفتاح بالخيار الاحتياطي العام.
-وتحتفظ الأدوات الأربع `obsidian_sync_*` بسلوكها المنفصل الخاص برمز المزامنة.
+### مصدر سياق مفتاح لكل واجهة برمجة التطبيقات (اختياري)
+
+يمكن تحديد نطاق تكوين Obsidian** لكل مفتاح API** عبر جدول `api_key_context_sources` (`src/lib/db/apiKeyContextSources.ts`). عندما يحمل استدعاء MCP معرف مفتاح API مصادق عليه، `getObsidianConfigForApiKey()` يفضل token/base-URL/vault-path (`source: "api_key"`) الخاص بهذا المفتاح ويعود إلى التكوين العام (`source: "global"`).
+
+تتطلب أدوات MCP غير المتزامنة هوية المتصل التي تم حلها قبل قراءة هذا التكوين. يتلقى المتصل الذي ليس له هوية `Obsidian API token not configured`، ولا يتم إرسال أي طلب مخزن. يتم حل المتصلين HTTP من خلال بيانات اعتماد الطلب الخاصة بهم؛ يمكن للمتصلين بـ stdio حل المشكلة من خلال `OMNIROUTE_API_KEY` أو `ROUTER_API_KEY`. لا يمكن لمتصل HTTP الذي لم يتم حله أن يرث هوية بيئة الخادم. العنصر النائب IDs وحده لا يسمح بالوصول؛ تظل بيانات اعتماد البيئة الصالحة التي يتم حلها إلى `env-key` مدعومة. تحتفظ المفاتيح التي تمت مصادقتها بدون تكوين Obsidian لكل مفتاح بالاحتياطي العام. تحتفظ أدوات `obsidian_sync_*` الأربعة بسلوك رمز المزامنة المنفصل الخاص بها.
 
 ## أدوات MCP ‏(22)
 

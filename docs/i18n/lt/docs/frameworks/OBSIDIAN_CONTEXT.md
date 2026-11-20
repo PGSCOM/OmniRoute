@@ -31,89 +31,65 @@ Klientas (`src/lib/obsidian/api.ts`) papildo Local REST API šiomis funkcijomis:
 
 ## Sąranka
 
-Obsidian prieigos raktui ar baziniam URL **nėra jokio aplinkos kintamojo** — abu saugomi
-SQLite lentelėje `key_value` (vardų srityje `obsidian`) naudojant
-`src/lib/db/obsidian.ts`. Prieigos raktas **saugomas užšifruotas** (AES-256-GCM, su
-atgalinio suderinamumo atsarginiu mechanizmu, naudojančiu atvirąjį tekstą). Konfigūruokite
-Endpoint valdymo skydelio kortelėje **Context Sources** (`ObsidianSourceCard`) arba
-naudodami nustatymų REST API.
+Yra** nėra aplinkos kintamojo** Obsidian prieigos raktui arba baziniam URL — abu yra saugomi SQLite `key_value` lentelėje (vardų erdvėje `obsidian`) per `src/lib/db/obsidian.ts`. Žetonas yra** užšifruotas ramybės būsenoje** (AES-256-GCM, su paprastu tekstu atgalinio suderinimo atsarginiu variantu). Konfigūruoti iš** Konteksto šaltiniai** Endpoint prietaisų skydelio skirtuką (`ObsidianSourceCard`) arba per nustatymus REST API.
 
 > [!IMPORTANT]
-> **Obsidian Local REST API** papildinys turi būti įdiegtas ir paleistas. Jo REST
-> sąsaja klausosi adresu **HTTP `127.0.0.1:27123`** (numatytasis bazinis URL). Prievadas
-> `27124` yra _atskiras_ MCP/HTTPS galinis taškas, todėl nustatymų maršrutas jį aiškiai
-> atmeta. Jei jungiatės iš kito įrenginio, naudokite `http://<tailscale-ip>:27123`.
+> The**Obsidian Vietinis REST API** papildinys turi būti įdiegtas ir paleistas. Jo REST sąsaja klausosi**HTTP `127.0.0.1:27123`** (numatytasis pagrindas URL). Prievadas `27124` yra _atskiras_ MCP/HTTPS galutinis taškas ir yra aiškiai atmestas nustatymų maršrute. Jei jungiatės iš kito įrenginio, naudokite `http://<tailscale-ip>:27123`.
 
 ### Konfigūracijos raktai (SQLite `key_value`, vardų sritis `obsidian`)
 
-| Raktas            | Paskirtis                                                         | Užšifruota |
-| ----------------- | ----------------------------------------------------------------- | ---------- |
-| `api_key`         | Local REST API nešiklio prieigos raktas                           | taip       |
-| `base_url`        | REST bazinis URL (numatytasis `http://127.0.0.1:27123`)           | ne         |
-| `vault_path`      | Absoliutus saugyklos katalogo kelias (sinchronizavimui)           | ne         |
-| `webdav_username` | Sugeneruotas WebDAV naudotojo vardas (saugyklos sinchronizavimui) | ne         |
-| `webdav_password` | Sugeneruotas WebDAV slaptažodis (saugyklos sinchronizavimui)      | taip       |
-| `webdav_enabled`  | Ar įjungtas saugyklos sinchronizavimas per WebDAV                 | ne         |
+| Raktas            | Tikslas                                                           | Šifruota |
+| ----------------- | ----------------------------------------------------------------- | -------- |
+| `api_key`         | Vietinis REST API nešiklio ženklas                                | taip     |
+| `base_url`        | REST base URL (numatytasis `http://127.0.0.1:27123`)              | ne       |
+| `vault_path`      | Absoliutus kelias į saugyklos katalogą (sinchronizavimui)         | ne       |
+| `webdav_username` | Sugeneruotas WebDAV naudotojo vardas (saugyklos sinchronizavimas) | ne       |
+| `webdav_password` | Sugeneruotas WebDAV slaptažodis (saugyklos sinchronizavimas)      | taip     |
+| `webdav_enabled`  | Ar įjungtas WebDAV saugyklos sinchronizavimas                     | ne       |
 
-### Konfigūravimas naudojant REST
+### Konfigūruoti per REST
 
 ```bash
-# Įrašyti ir patikrinti Local REST API prieigos raktą (POST tikrina pateikdamas būsenos užklausą)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# Patikrinti ryšio būseną (grąžina connected, hasToken, baseUrl, vaultPath)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# Atsijungti (pašalina išsaugotą prieigos raktą)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-Visiems metodams reikalingas autentifikavimas valdymo skydelyje. `POST` atmeta bet kokį
-URL, naudojantį prievadą `27124`, ir prieš išsaugodamas patikrina prieigos raktą,
-iškviesdamas Local REST API būsenos galinį tašką.
+Visiems metodams reikalingas prietaisų skydelio autentifikavimas. `POST` atmeta bet kokį URL prievade `27124` ir patvirtina prieigos raktą iškviesdamas vietinį REST API būsenos tašką prieš tęsdamas.
 
-### Saugyklos sinchronizavimas per WebDAV
+### WebDAV saugyklos sinchronizavimas
 
-`src/app/api/settings/obsidian/webdav/route.ts` valdo pasirinktinį WebDAV pagrįstą
-saugyklos sinchronizavimą (kurį vykdo `src/lib/obsidianSync.ts`). Jį įjungus, OmniRoute
-nurodomas vietinis saugyklos katalogas ir sugeneruojama atsitiktinė WebDAV naudotojo
-vardo bei slaptažodžio pora:
+`src/app/api/settings/obsidian/webdav/route.ts` valdo pasirenkamą WebDAV palaikomą saugyklos sinchronizavimą (kurią valdo `src/lib/obsidianSync.ts`). Įjungus, OmniRoute nukreipiamas į vietinio saugyklos katalogą ir sukuriama atsitiktinė WebDAV username/password pora:
 
 ```bash
-# Įjungti WebDAV sinchronizavimą saugyklos katalogui (sugeneruoja naudotojo vardą ir slaptažodį)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# Gauti WebDAV sinchronizavimo būseną (prisijungimo duomenys grąžinami tik tada, kai sinchronizavimas įjungtas)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# Išjungti WebDAV sinchronizavimą (pašalina prisijungimo duomenis ir valdomą .stignore)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
-### Kiekvienam API raktui atskiras konteksto šaltinis (pasirinktinai)
+### Saugumas ir transportas
 
-Obsidian konfigūracija gali būti apribota **kiekvienam API raktui atskirai**, naudojant
-lentelę `api_key_context_sources` (`src/lib/db/apiKeyContextSources.ts`). Kai MCP
-iškvietime pateikiamas autentifikuoto API rakto ID, `getObsidianConfigForApiKey()`
-pirmenybę teikia tam raktui priklausančiam prieigos raktui, baziniam URL ir saugyklos
-keliui (`source: "api_key"`), o kitu atveju naudoja visuotinę konfigūraciją
-(`source: "global"`).
+WebDAV autentifikavimas užtikrina IP gedimų sekimą ir blokavimą (10 nesėkmingų bandymų per 60 sekundžių langą suaktyvina 5 minučių blokavimą naudojant `429 Too Many Requests` ir `Retry-After`). Kadangi WebDAV perduoda pagrindinius autentifikavimo kredencialus, primygtinai rekomenduojama nutraukti TLS (arba nukreipti maršrutą saugiu tuneliu, pvz., Tailscale arba Cloudflare tuneliu), kai pasiekiate WebDAV galinį tašką už atgalinės linijos ribų.
 
-Prieš nuskaitydami šią konfigūraciją, su sinchronizavimu nesusiję MCP įrankiai turi
-nustatyti iškvietėjo tapatybę. Tapatybės neturintis iškvietėjas gauna pranešimą
-`Obsidian API prieigos raktas nesukonfigūruotas`, o saugyklos užklausa nesiunčiama.
-HTTP iškvietėjų tapatybė nustatoma pagal jų užklausos prisijungimo duomenis; stdio
-iškvietėjų tapatybė gali būti nustatyta naudojant `OMNIROUTE_API_KEY` arba
-`ROUTER_API_KEY`. HTTP iškvietėjas, kurio tapatybės nustatyti nepavyko, negali perimti
-serverio aplinkos tapatybės. Vien rezervuoti ID prieigos nesuteikia; vis dar palaikomas
-galiojantis aplinkos prisijungimo duomuo, nustatomas kaip `env-key`. Autentifikuotiems
-raktams, neturintiems atskiros Obsidian konfigūracijos, ir toliau naudojama visuotinė
-atsarginė konfigūracija. Keturi įrankiai `obsidian_sync_*` išlaiko savo atskirą
-sinchronizavimo prieigos rakto veikseną.
+### API rakto konteksto šaltinis (pasirenkama)
+
+Obsidian config gali būti taikoma** už API raktą** per `api_key_context_sources` lentelę (`src/lib/db/apiKeyContextSources.ts`). Kai MCP iškvietimas turi autentifikuotą API rakto ID, `getObsidianConfigForApiKey()` teikia pirmenybę to rakto token/base-URL/vault-path (`source: "api_key"`) ir kitu atveju grįžta į visuotinę konfigūraciją (`source: "global"`).
+
+Prieš nuskaitant šią konfigūraciją, nesinchronizuojamiems MCP įrankiams reikia nustatyti skambinančiojo tapatybę. Skambinantis asmuo be tapatybės gauna `Obsidian API token not configured` ir jokia saugyklos užklausa nesiunčiama. HTTP skambinantieji sprendžia naudodami savo užklausos kredencialus; stdio skambinantieji gali išspręsti naudodami `OMNIROUTE_API_KEY` arba `ROUTER_API_KEY`. Neišspręstas HTTP skambutis negali paveldėti serverio aplinkos tapatybės. Vien rezervuota vieta IDs nesuteikia prieigos teisės; galiojantis aplinkos kredencialas, kuris išsprendžia `env-key` išlieka palaikomas. Autentifikuoti raktai be kiekvieno rakto Obsidian konfigūracijos išlaiko visuotinį atsarginį variantą. Keturi `obsidian_sync_*` įrankiai išlaiko atskirą sinchronizavimo raktų elgesį.
 
 ## MCP įrankiai (22)
 

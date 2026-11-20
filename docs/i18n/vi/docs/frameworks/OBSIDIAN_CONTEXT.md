@@ -29,83 +29,67 @@ Obsidian và (tùy chọn) điều phối quá trình đồng bộ kho ghi chú 
   (HTTP trên `27123`, **không phải** điểm cuối MCP trên `27124`) và dạng địa chỉ Tailscale.
 - **Mã hóa đường dẫn** tương đối với kho ghi chú để các đường dẫn ghi chú có dấu cách/dấu gạch chéo được xử lý an toàn.
 
-## Thiết lập
+## Cài đặt
 
-**Không có biến môi trường** cho token hoặc URL cơ sở của Obsidian — cả hai đều được
-lưu trữ trong bảng SQLite `key_value` (namespace `obsidian`) thông qua
-`src/lib/db/obsidian.ts`. Token được **mã hóa khi lưu trữ** (AES-256-GCM, với
-cơ chế dự phòng tương thích ngược dùng văn bản thuần). Cấu hình từ tab **Nguồn ngữ cảnh** của
-bảng điều khiển Endpoint (`ObsidianSourceCard`), hoặc thông qua API REST cài đặt.
+có** không có biến môi trường** đối với mã thông báo Obsidian hoặc URL — sở, cả hai đều được lưu trữ trong bảng SQLite `key_value` (không gian tên `obsidian`) thông qua `src/lib/db/obsidian.ts`. Mã thông báo là** được mã hóa ở phần còn lại** (AES-256-GCM, với dự phòng tương thích ngược với văn bản gốc). Cấu hình từ** Nguồn ngữ cảnh** của Bảng điều khiển điểm cuối (`ObsidianSourceCard`) hoặc thông qua cài đặt REST API.
 
 > [!IMPORTANT]
-> Plugin **Obsidian Local REST API** phải được cài đặt và đang chạy. Giao diện REST của
-> plugin lắng nghe trên **HTTP `127.0.0.1:27123`** (URL cơ sở mặc định). Cổng `27124`
-> là một điểm cuối MCP/HTTPS _riêng biệt_ và bị route cài đặt từ chối rõ ràng.
-> Nếu kết nối từ một thiết bị khác, hãy sử dụng `http://<tailscale-ip>:27123`.
+> các**Obsidian REST API địa phương** plugin phải được cài đặt và chạy. Giao diện REST của nó lắng nghe**HTTP `127.0.0.1:27123`** (cơ sở mặc định URL). Cổng `27124` là điểm cuối _separate_ MCP/HTTPS và bị tuyến cài đặt từ chối rõ ràng. Nếu kết nối từ thiết bị khác, hãy sử dụng `http://<tailscale-ip>:27123`.
 
-### Các khóa cấu hình (SQLite `key_value`, namespace `obsidian`)
+### Các phím cấu hình (SQLite `key_value`, namespace `obsidian`)
 
-| Khóa              | Mục đích                                            | Được mã hóa |
-| ----------------- | --------------------------------------------------- | ----------- |
-| `api_key`         | Token bearer của Local REST API                     | có          |
-| `base_url`        | URL cơ sở REST (mặc định `http://127.0.0.1:27123`)  | không       |
-| `vault_path`      | Đường dẫn tuyệt đối đến thư mục vault (để đồng bộ)  | không       |
-| `webdav_username` | Tên người dùng WebDAV được tạo (đồng bộ vault)      | không       |
-| `webdav_password` | Mật khẩu WebDAV được tạo (đồng bộ vault)            | có          |
-| `webdav_enabled`  | Liệu đồng bộ vault qua WebDAV có được bật hay không | không       |
+| Chìa khóa         | Mục đích                                            | Đã mã hóa |
+| ----------------- | --------------------------------------------------- | --------- |
+| `api_key`         | Mã thông báo mang REST API địa phương               | Đúng      |
+| `base_url`        | REST cơ sở URL ( `http://127.0.0.1:27123` mặc định) | KHÔNG     |
+| `vault_path`      | Đường dẫn tuyệt đối tới thư mục vault (để đồng bộ)  | KHÔNG     |
+| `webdav_username` | Tên người dùng WebDAV đã tạo (đồng bộ hóa vault)    | KHÔNG     |
+| `webdav_password` | Đã tạo mật khẩu WebDAV (đồng bộ hóa vault)          | Đúng      |
+| `webdav_enabled`  | Đồng bộ hóa WebDAV vault có được bật hay không      | KHÔNG     |
 
-### Cấu hình qua REST
+### Định cấu hình qua REST
 
 ```bash
-# Lưu + xác thực token Local REST API (POST xác thực thông qua kiểm tra trạng thái)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# Kiểm tra trạng thái kết nối (trả về connected, hasToken, baseUrl, vaultPath)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# Ngắt kết nối (xóa token đã lưu)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-Tất cả các phương thức đều yêu cầu xác thực bảng điều khiển. `POST` từ chối mọi URL trên cổng `27124`
-và xác thực token bằng cách gọi điểm cuối trạng thái của Local REST API trước khi lưu lại.
+Tất cả các phương pháp đều yêu cầu xác thực trang tổng quan. `POST` từ chối mọi URL trên cổng `27124` và xác thực mã thông báo bằng cách gọi điểm cuối trạng thái REST API cục bộ trước khi tiếp tục.
 
-### Đồng bộ vault qua WebDAV
+### đồng bộ hóa WebDAV vault
 
-`src/app/api/settings/obsidian/webdav/route.ts` quản lý tính năng đồng bộ vault tùy chọn
-dựa trên WebDAV (được điều khiển bởi `src/lib/obsidianSync.ts`). Khi bật, tính năng này trỏ OmniRoute đến một
-thư mục vault cục bộ và tạo một cặp tên người dùng/mật khẩu WebDAV ngẫu nhiên:
+`src/app/api/settings/obsidian/webdav/route.ts` quản lý đồng bộ hóa vault được hỗ trợ bởi WebDAV tùy chọn (được điều khiển bởi `src/lib/obsidianSync.ts`). Việc kích hoạt nó sẽ trỏ OmniRoute vào một thư mục vault cục bộ và tạo ra một cặp WebDAV username/password ngẫu nhiên:
 
 ```bash
-# Bật đồng bộ WebDAV cho một thư mục vault (tạo tên người dùng/mật khẩu)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# Lấy trạng thái đồng bộ WebDAV (thông tin xác thực chỉ được trả về khi đang bật)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# Tắt đồng bộ WebDAV (xóa thông tin xác thực + .stignore được quản lý)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
-### Nguồn ngữ cảnh theo từng khóa API (tùy chọn)
+### An ninh & Vận tải
 
-Cấu hình Obsidian có thể được giới hạn phạm vi **theo từng khóa API** thông qua bảng `api_key_context_sources`
-(`src/lib/db/apiKeyContextSources.ts`). Khi một lệnh gọi MCP mang theo id khóa API đã xác thực,
-`getObsidianConfigForApiKey()` ưu tiên token/URL-cơ-sở/đường-dẫn-vault riêng của khóa đó
-(`source: "api_key"`) và nếu không có thì dùng cấu hình toàn cục làm phương án dự phòng (`source: "global"`).
+Xác thực WebDAV thực thi việc theo dõi và khóa lỗi trên mỗi IP (10 lần thử không thành công trong khoảng thời gian 60 giây sẽ kích hoạt khóa 5 phút với `429 Too Many Requests` và `Retry-After`). Vì WebDAV truyền thông tin xác thực Cơ bản nên việc chấm dứt TLS (hoặc định tuyến qua một đường hầm an toàn như Tailscale hoặc Cloudflare Tunnel) được khuyến nghị đặc biệt khi truy cập điểm cuối WebDAV bên ngoài vòng lặp ngược.
 
-Các công cụ MCP không dùng để đồng bộ yêu cầu danh tính người gọi đã được phân giải trước khi đọc cấu hình này.
-Người gọi không có danh tính sẽ nhận được `Obsidian API token not configured`, và không có yêu cầu nào
-được gửi đến vault. Người gọi HTTP được phân giải thông qua thông tin xác thực trong yêu cầu của họ; người gọi stdio
-có thể được phân giải thông qua `OMNIROUTE_API_KEY` hoặc `ROUTER_API_KEY`. Người gọi HTTP chưa được phân giải
-không thể kế thừa danh tính môi trường của máy chủ. Chỉ riêng các ID giữ chỗ không cấp quyền
-truy cập; thông tin xác thực môi trường hợp lệ phân giải thành `env-key` vẫn được hỗ trợ.
-Các khóa đã xác thực nhưng không có cấu hình Obsidian riêng cho khóa vẫn sử dụng phương án dự phòng toàn cục.
-Bốn công cụ `obsidian_sync_*` vẫn giữ hành vi token đồng bộ riêng biệt của chúng.
+### Nguồn ngữ cảnh cho mỗi khóa API (tùy chọn)
+
+cấu hình Obsidian có thể được xác định trong phạm vi** mỗi khóa API** thông qua bảng `api_key_context_sources` (`src/lib/db/apiKeyContextSources.ts`). Khi một cuộc gọi MCP mang id khóa API đã được xác thực, `getObsidianConfigForApiKey()` sẽ ưu tiên token/base-URL/vault-path (`source: "api_key"`) của chính khóa đó và nếu không thì quay trở lại cấu hình chung (`source: "global"`).
+
+Các công cụ MCP không đồng bộ hóa yêu cầu danh tính người gọi được giải quyết trước khi đọc cấu hình này. Người gọi không có danh tính sẽ nhận được `Obsidian API token not configured` và không có yêu cầu vault nào được gửi. người gọi HTTP giải quyết thông qua thông tin xác thực yêu cầu của họ; người gọi stdio có thể giải quyết thông qua `OMNIROUTE_API_KEY` hoặc `ROUTER_API_KEY`. Người gọi HTTP chưa được giải quyết không thể kế thừa danh tính môi trường của máy chủ. Riêng trình giữ chỗ IDs không cho phép truy cập; thông tin xác thực môi trường hợp lệ phân giải thành `env-key` vẫn được hỗ trợ. Các khóa được xác thực không có cấu hình Obsidian cho mỗi khóa vẫn giữ nguyên dự phòng chung. Bốn công cụ `obsidian_sync_*` giữ hành vi mã thông báo đồng bộ hóa riêng biệt của chúng.
 
 ## Công cụ MCP (22)
 

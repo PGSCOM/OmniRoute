@@ -33,85 +33,65 @@ OmniRoute একটি **Obsidian** ভল্টের সঙ্গে **কন�
 
 ## সেটআপ
 
-Obsidian token বা base URL-এর জন্য **কোনো environment variable নেই** — উভয়ই
-`src/lib/db/obsidian.ts`-এর মাধ্যমে SQLite `key_value` table-এ (namespace `obsidian`)
-সংরক্ষিত হয়। token-টি **সংরক্ষিত অবস্থায় encrypted** থাকে (AES-256-GCM, সঙ্গে
-plaintext backward-compat fallback)। Endpoint dashboard-এর **Context Sources** tab
-(`ObsidianSourceCard`) থেকে অথবা settings REST API-এর মাধ্যমে কনফিগার করুন।
+আছে** কোন পরিবেশ পরিবর্তনশীল** Obsidian টোকেন বা বেস URL — এর জন্য উভয়ই `src/lib/db/obsidian.ts` এর মাধ্যমে SQLite `key_value` টেবিলে (নেমস্পেস `obsidian`) সংরক্ষণ করা হয়। টোকেন হল** বিশ্রামে এনক্রিপ্ট করা** (AES-256-GCM, প্লেইনটেক্সট ব্যাকওয়ার্ড-কম্প্যাট ফলব্যাক সহ)। থেকে কনফিগার করুন** প্রসঙ্গ সূত্র** এন্ডপয়েন্ট ড্যাশবোর্ডের ট্যাব (`ObsidianSourceCard`), অথবা সেটিংসের মাধ্যমে REST API।
 
 > [!IMPORTANT]
-> **Obsidian Local REST API** plugin অবশ্যই ইনস্টল করা এবং চালু থাকতে হবে। এর REST
-> interface **HTTP `127.0.0.1:27123`**-এ শোনে (default base URL)। Port `27124`
-> একটি _পৃথক_ MCP/HTTPS endpoint এবং settings route এটিকে স্পষ্টভাবে প্রত্যাখ্যান করে।
-> অন্য কোনো device থেকে সংযোগ করলে `http://<tailscale-ip>:27123` ব্যবহার করুন।
+> দ**Obsidian স্থানীয় REST API** প্লাগইন ইনস্টল এবং চলমান আবশ্যক। এর REST ইন্টারফেস শোনে**HTTP `127.0.0.1:27123`** (ডিফল্ট বেস URL)। পোর্ট `27124` হল একটি _separate_ MCP/HTTPS এন্ডপয়েন্ট এবং সেটিংস রুট দ্বারা স্পষ্টভাবে প্রত্যাখ্যান করা হয়েছে। অন্য ডিভাইস থেকে সংযোগ করলে, `http://<tailscale-ip>:27123` ব্যবহার করুন।
 
-### কনফিগারেশন key (SQLite `key_value`, namespace `obsidian`)
+### কনফিগারেশন কী (SQLite `key_value`, নেমস্পেস `obsidian`)
 
-| Key               | উদ্দেশ্য                                         | Encrypted |
-| ----------------- | ------------------------------------------------ | --------- |
-| `api_key`         | Local REST API bearer token                      | হ্যাঁ     |
-| `base_url`        | REST base URL (default `http://127.0.0.1:27123`) | না        |
-| `vault_path`      | vault directory-এর absolute path (sync-এর জন্য)  | না        |
-| `webdav_username` | তৈরি করা WebDAV username (vault sync)            | না        |
-| `webdav_password` | তৈরি করা WebDAV password (vault sync)            | হ্যাঁ     |
-| `webdav_enabled`  | WebDAV vault sync সক্রিয় কি না                  | না        |
+| চাবি              | উদ্দেশ্য                                       | এনক্রিপ্ট করা হয়েছে |
+| ----------------- | ---------------------------------------------- | -------------------- |
+| `api_key`         | স্থানীয় REST API বহনকারী টোকেন                | হ্যাঁ                |
+| `base_url`        | REST বেস URL (ডিফল্ট `http://127.0.0.1:27123`) | না                   |
+| `vault_path`      | ভল্ট ডিরেক্টরির সম্পূর্ণ পথ (সিঙ্কের জন্য)     | না                   |
+| `webdav_username` | জেনারেটেড WebDAV ব্যবহারকারীর নাম (ভল্ট সিঙ্ক) | না                   |
+| `webdav_password` | জেনারেটেড WebDAV পাসওয়ার্ড (ভল্ট সিঙ্ক)       | হ্যাঁ                |
+| `webdav_enabled`  | WebDAV ভল্ট সিঙ্ক সক্ষম করা আছে কিনা           | না                   |
 
-### REST-এর মাধ্যমে কনফিগার করুন
+### REST এর মাধ্যমে কনফিগার করুন
 
 ```bash
-# Local REST API token সংরক্ষণ + যাচাই করুন (POST একটি status check-এর মাধ্যমে যাচাই করে)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# সংযোগের status পরীক্ষা করুন (connected, hasToken, baseUrl, vaultPath ফেরত দেয়)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# সংযোগ বিচ্ছিন্ন করুন (সংরক্ষিত token মুছে দেয়)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-সব method-এর জন্য dashboard authentication প্রয়োজন। `POST`, port `27124`-এর যেকোনো
-URL প্রত্যাখ্যান করে এবং সংরক্ষণের আগে Local REST API status endpoint-এ call করে
-token যাচাই করে।
+সমস্ত পদ্ধতির জন্য ড্যাশবোর্ড প্রমাণীকরণ প্রয়োজন। `POST` পোর্ট `27124` এ যেকোনো URL প্রত্যাখ্যান করে এবং টিকে থাকার আগে স্থানীয় REST API স্ট্যাটাস এন্ডপয়েন্টে কল করে টোকেনটিকে বৈধ করে।
 
-### WebDAV vault sync
+### WebDAV ভল্ট সিঙ্ক
 
-`src/app/api/settings/obsidian/webdav/route.ts` একটি ঐচ্ছিক WebDAV-backed
-vault sync পরিচালনা করে (যা `src/lib/obsidianSync.ts` দ্বারা চালিত)। এটি সক্রিয় করলে
-OmniRoute-কে একটি local vault directory-র দিকে নির্দেশ করা হয় এবং একটি random WebDAV
-username/password pair তৈরি করা হয়:
+`src/app/api/settings/obsidian/webdav/route.ts` একটি ঐচ্ছিক WebDAV-সমর্থিত ভল্ট সিঙ্ক পরিচালনা করে ( `src/lib/obsidianSync.ts` দ্বারা চালিত)। এটি সক্রিয় করা একটি স্থানীয় ভল্ট ডিরেক্টরিতে OmniRoute নির্দেশ করে এবং একটি এলোমেলো WebDAV username/password জোড়া মিন্ট করে:
 
 ```bash
-# একটি vault directory-এর জন্য WebDAV sync সক্রিয় করুন (username/password তৈরি করে)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# WebDAV sync status দেখুন (শুধু সক্রিয় থাকা অবস্থায় credentials ফেরত দেওয়া হয়)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# WebDAV sync নিষ্ক্রিয় করুন (credentials + পরিচালিত .stignore মুছে দেয়)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
-### প্রতি-API-key context source (ঐচ্ছিক)
+### নিরাপত্তা ও পরিবহন
 
-Obsidian config-কে `api_key_context_sources` table-এর মাধ্যমে **প্রতি API key অনুযায়ী**
-scoped করা যায় (`src/lib/db/apiKeyContextSources.ts`)। কোনো MCP call-এ authenticated API
-key id থাকলে, `getObsidianConfigForApiKey()` সেই key-এর নিজস্ব token/base-URL/vault-path-কে
-অগ্রাধিকার দেয় (`source: "api_key"`); অন্যথায় global config-এ fallback করে
-(`source: "global"`)।
+WebDAV প্রমাণীকরণ প্রতি-আইপি ব্যর্থতা ট্র্যাকিং এবং লকআউট প্রয়োগ করে (60-সেকেন্ডের উইন্ডোর মধ্যে 10টি ব্যর্থ প্রচেষ্টা `429 Too Many Requests` এবং `Retry-After` এর সাথে 5-মিনিটের লকআউট ট্রিগার করে)। যেহেতু WebDAV বেসিক প্রমাণীকরণের শংসাপত্র প্রেরণ করে, লুপব্যাকের বাইরে WebDAV এন্ডপয়েন্ট অ্যাক্সেস করার সময় TLS (অথবা একটি সুরক্ষিত টানেল যেমন Tailscale বা Cloudflare টানেলের উপর রাউটিং) বন্ধ করার পরামর্শ দেওয়া হয়।
 
-Non-sync MCP tool-গুলো এই configuration পড়ার আগে একটি resolved caller identity চায়।
-identity-বিহীন caller `Obsidian API token not configured` পায় এবং কোনো vault request
-পাঠানো হয় না। HTTP caller-রা তাদের request credentials-এর মাধ্যমে resolve হয়; stdio
-caller-রা `OMNIROUTE_API_KEY` বা `ROUTER_API_KEY`-এর মাধ্যমে resolve হতে পারে। কোনো
-unresolved HTTP caller server-এর environment identity উত্তরাধিকারসূত্রে পেতে পারে না।
-শুধু placeholder ID access অনুমোদন করে না; `env-key`-তে resolve হওয়া একটি valid
-environment credential এখনও সমর্থিত। Per-key Obsidian configuration-বিহীন authenticated
-key-গুলো global fallback বজায় রাখে। চারটি `obsidian_sync_*` tool তাদের পৃথক
-sync-token আচরণ বজায় রাখে।
+### প্রতি-API-কী প্রসঙ্গ উৎস (ঐচ্ছিক)
+
+Obsidian কনফিগারেশন স্কোপ করা যেতে পারে** প্রতি API কী** `api_key_context_sources` টেবিলের মাধ্যমে (`src/lib/db/apiKeyContextSources.ts`)। যখন একটি MCP কল একটি প্রমাণীকৃত API কী আইডি বহন করে, `getObsidianConfigForApiKey()` সেই কীটির নিজস্ব token/base-URL/vault-path (`source: "api_key"`) পছন্দ করে এবং অন্যথায় গ্লোবাল কনফিগারেশনে (`source: "global"`) ফিরে আসে।
+
+এই কনফিগারেশনটি পড়ার আগে নন-সিঙ্ক MCP টুলগুলির জন্য একটি সমাধানকৃত কলার পরিচয় প্রয়োজন। কোনো পরিচয় ছাড়াই একজন কলকারী `Obsidian API token not configured` পায় এবং কোনো ভল্ট অনুরোধ পাঠানো হয় না। HTTP কলাররা তাদের অনুরোধের প্রমাণপত্রের মাধ্যমে সমাধান করে; stdio কলাররা `OMNIROUTE_API_KEY` বা `ROUTER_API_KEY` মাধ্যমে সমাধান করতে পারে। একটি অমীমাংসিত HTTP কলার সার্ভারের পরিবেশ পরিচয়ের উত্তরাধিকারী হতে পারে না। প্লেসহোল্ডার IDs একা অ্যাক্সেস অনুমোদন করে না; একটি বৈধ এনভায়রনমেন্ট শংসাপত্র যা `env-key` এর সমাধান করে সমর্থিত থাকে। প্রতি-কী Obsidian কনফিগারেশন ছাড়াই প্রমাণীকৃত কীগুলি বিশ্বব্যাপী ফলব্যাক ধরে রাখে। চারটি `obsidian_sync_*` টুল তাদের আলাদা সিঙ্ক-টোকেন আচরণ রাখে।
 
 ## MCP টুলসমূহ (22)
 

@@ -30,83 +30,67 @@ Klienten (`src/lib/obsidian/api.ts`) kapslar in Local REST API med:
   (HTTP på `27123`, **inte** MCP-slutpunkten på `27124`) och Tailscale-formatet.
 - Valvrelativ **sökvägskodning** så att anteckningssökvägar med blanksteg/snedstreck hanteras säkert.
 
-## Konfiguration
+## Inställning
 
-Det finns **ingen miljövariabel** för Obsidian-token eller bas-URL — båda
-lagras i SQLite-tabellen `key_value` (namnrymd `obsidian`) via
-`src/lib/db/obsidian.ts`. Token är **krypterad vid lagring** (AES-256-GCM, med
-bakåtkompatibel reservlösning för klartext). Konfigurera från fliken **Kontextkällor** i
-slutpunktens kontrollpanel (`ObsidianSourceCard`) eller via REST-API:t för inställningar.
+Det finns** ingen miljövariabel** för Obsidian token eller bas URL — lagras båda i tabellen SQLite `key_value` (namnrymden `obsidian`) via `src/lib/db/obsidian.ts`. Token är** krypterad i vila** (AES-256-GCM, med klartext bakåtkompatibel fallback). Konfigurera från** Kontextkällor** fliken i Endpoint-instrumentpanelen (`ObsidianSourceCard`), eller via inställningarna REST API.
 
 > [!IMPORTANT]
-> Insticksprogrammet **Obsidian Local REST API** måste vara installerat och köras. Dess REST-
-> gränssnitt lyssnar på **HTTP `127.0.0.1:27123`** (standardbas-URL:en). Port `27124`
-> är en _separat_ MCP/HTTPS-slutpunkt och avvisas uttryckligen av inställningsrutten.
-> Om du ansluter från en annan enhet använder du `http://<tailscale-ip>:27123`.
+> De**Obsidian Lokal REST API** plugin måste installeras och köras. Dess REST gränssnitt lyssnar på**HTTP `127.0.0.1:27123`** (standardbasen URL). Port `27124` är en _separate_ MCP/HTTPS slutpunkt och avvisas uttryckligen av inställningsrutten. Om du ansluter från en annan enhet, använd `http://<tailscale-ip>:27123`.
 
-### Konfigurationsnycklar (SQLite `key_value`, namnrymd `obsidian`)
+### Konfigurationsnycklar (SQLite `key_value`, namnutrymme `obsidian`)
 
-| Nyckel            | Syfte                                            | Krypterad |
-| ----------------- | ------------------------------------------------ | --------- |
-| `api_key`         | Bearer-token för Local REST API                  | ja        |
-| `base_url`        | REST-bas-URL (standard `http://127.0.0.1:27123`) | nej       |
-| `vault_path`      | Absolut sökväg till valvkatalogen (för synkning) | nej       |
-| `webdav_username` | Genererat WebDAV-användarnamn (valvsynkning)     | nej       |
-| `webdav_password` | Genererat WebDAV-lösenord (valvsynkning)         | ja        |
-| `webdav_enabled`  | Om WebDAV-valvsynkning är aktiverad              | nej       |
+| Nyckel            | Ändamål                                                | Krypterad |
+| ----------------- | ------------------------------------------------------ | --------- |
+| `api_key`         | Lokal REST API bärartoken                              | ja        |
+| `base_url`        | REST bas URL (standard `http://127.0.0.1:27123`)       | inga      |
+| `vault_path`      | Absolut sökväg till valvkatalogen (för synkronisering) | inga      |
+| `webdav_username` | Genererat WebDAV -användarnamn (valvsynkronisering)    | inga      |
+| `webdav_password` | Genererat WebDAV lösenord (valvsynkronisering)         | ja        |
+| `webdav_enabled`  | Om WebDAV vault sync är aktiverad                      | inga      |
 
 ### Konfigurera via REST
 
 ```bash
-# Spara + validera Local REST API-token (POST validerar via en statuskontroll)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# Kontrollera anslutningsstatus (returnerar connected, hasToken, baseUrl, vaultPath)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# Koppla från (rensar lagrad token)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-Alla metoder kräver autentisering för kontrollpanelen. `POST` avvisar alla URL:er på port `27124`
-och validerar token genom att anropa status-slutpunkten för Local REST API innan den sparas.
+Alla metoder kräver instrumentpanelsautentisering. `POST` avvisar alla URL på port `27124` och validerar token genom att anropa den lokala REST API statusslutpunkten innan den fortsätter.
 
-### WebDAV-valvsynkning
+### WebDAV valv synk
 
-`src/app/api/settings/obsidian/webdav/route.ts` hanterar en valfri WebDAV-baserad
-valvsynkning (som drivs av `src/lib/obsidianSync.ts`). När den aktiveras pekar OmniRoute på en
-lokal valvkatalog och genererar ett slumpmässigt WebDAV-par med användarnamn och lösenord:
+`src/app/api/settings/obsidian/webdav/route.ts` hanterar en valfri WebDAV-stödd valvsynkronisering (driven av `src/lib/obsidianSync.ts`). Aktivering av det pekar OmniRoute mot en lokal valvkatalog och skapar ett slumpmässigt WebDAV username/password -par:
 
 ```bash
-# Aktivera WebDAV-synkning för en valvkatalog (genererar användarnamn/lösenord)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# Hämta status för WebDAV-synkning (autentiseringsuppgifter returneras endast när den är aktiverad)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# Inaktivera WebDAV-synkning (rensar autentiseringsuppgifter + hanterad .stignore)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
-### Kontextkälla per API-nyckel (valfritt)
+### Säkerhet & Transport
 
-Obsidian-konfiguration kan avgränsas **per API-nyckel** via tabellen `api_key_context_sources`
-(`src/lib/db/apiKeyContextSources.ts`). När ett MCP-anrop innehåller ett autentiserat API-
-nyckel-ID föredrar `getObsidianConfigForApiKey()` den nyckelns egen token/bas-URL/valvsökväg
-(`source: "api_key"`) och återgår annars till den globala konfigurationen (`source: "global"`).
+WebDAV autentisering upprätthåller felspårning och lockout per IP (10 misslyckade försök inom ett 60-sekunders fönster utlöser en 5-minuters lockout med `429 Too Many Requests` och `Retry-After`). Eftersom WebDAV sänder grundläggande autentiseringsuppgifter rekommenderas starkt att avsluta TLS (eller dirigera över en säker tunnel som Tailscale eller Cloudflare Tunnel) när du kommer åt WebDAV slutpunkten utanför loopback.
 
-MCP-verktyg som inte används för synkning kräver en identifierad anropare innan konfigurationen läses.
-En anropare utan identitet får `Obsidian API token not configured`, och ingen begäran
-skickas till valvet. HTTP-anropare identifieras via sina autentiseringsuppgifter i begäran; stdio-anropare
-kan identifieras via `OMNIROUTE_API_KEY` eller `ROUTER_API_KEY`. En oidentifierad HTTP-anropare
-kan inte ärva serverns miljöidentitet. Enbart platshållar-ID:n ger inte behörighet
-till åtkomst; en giltig miljöautentiseringsuppgift som matchar `env-key` stöds fortfarande.
-Autentiserade nycklar utan Obsidian-konfiguration per nyckel behåller den globala reservlösningen.
-De fyra `obsidian_sync_*`-verktygen behåller sitt separata beteende för synkningstoken.
+### Per-API-nyckel kontextkälla (valfritt)
+
+Obsidian config kan omfångas** per API nyckel** via `api_key_context_sources` tabellen (`src/lib/db/apiKeyContextSources.ts`). När ett MCP -anrop bär ett autentiserat API -nyckel-id, föredrar `getObsidianConfigForApiKey()` den nyckelns egen token/base-URL/vault-path (`source: "api_key"`) och faller annars tillbaka till den globala konfigurationen (`source: "global"`).
+
+Icke-synkroniserade MCP verktyg kräver en löst anropsidentitet innan du läser den här konfigurationen. En uppringare utan identitet tar emot `Obsidian API token not configured` och ingen valvbegäran skickas. HTTP -anropare löser genom sina förfrågningsuppgifter; stdio-anropare kan lösa genom `OMNIROUTE_API_KEY` eller `ROUTER_API_KEY`. En olöst HTTP anropare kan inte ärva serverns miljöidentitet. Platshållaren IDs ensam tillåter inte åtkomst; en giltig miljöreferens som löser sig till `env-key` stöds fortfarande. Autentiserade nycklar utan Obsidian -konfiguration per nyckel behåller den globala reserv. De fyra `obsidian_sync_*` verktygen behåller sitt separata synk-tokenbeteende.
 
 ## MCP-verktyg (22)
 

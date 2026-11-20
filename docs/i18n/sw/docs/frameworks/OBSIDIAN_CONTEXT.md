@@ -30,83 +30,67 @@ Kiteja (`src/lib/obsidian/api.ts`) hufunika Local REST API kwa:
   (HTTP kwenye `27123`, **si** endpoint ya MCP kwenye `27124`) na muundo wa Tailscale.
 - **Usimbaji wa njia zinazohusiana na vault** ili njia za madokezo zenye nafasi/mikwaruzo ziwe salama.
 
-## Usanidi
+## Sanidi
 
-Hakuna **kigeu cha mazingira** cha tokeni ya Obsidian au URL ya msingi — vyote
-vinahifadhiwa katika jedwali la SQLite `key_value` (nafasi ya majina `obsidian`) kupitia
-`src/lib/db/obsidian.ts`. Tokeni **imesimbwa fiche inapohifadhiwa** (AES-256-GCM, ikiwa na
-utaratibu mbadala wa uoanifu wa nyuma wa maandishi wazi). Sanidi kupitia kichupo cha **Vyanzo vya Muktadha** cha
-dashibodi ya Endpoint (`ObsidianSourceCard`), au kupitia API ya REST ya mipangilio.
+Kuna** hakuna mabadiliko ya mazingira** kwa ishara Obsidian au msingi URL — zote zimehifadhiwa kwenye jedwali la SQLite `key_value` (nafasi ya jina `obsidian`) kupitia `src/lib/db/obsidian.ts`. Ishara ni** imesimbwa wakati wa mapumziko** (AES-256-GCM, iliyo na maandishi wazi ya kurudi nyuma-compat mbadala). Sanidi kutoka kwa** Vyanzo vya Muktadha** kichupo cha dashibodi ya Mwisho (`ObsidianSourceCard`), au kupitia mipangilio REST API.
 
 > [!IMPORTANT]
-> Programu-jalizi ya **Obsidian Local REST API** lazima iwe imesakinishwa na inaendeshwa. Kiolesura chake cha REST
-> husikiliza kwenye **HTTP `127.0.0.1:27123`** (URL chaguomsingi ya msingi). Porti `27124`
-> ni endpoint tofauti ya MCP/HTTPS na inakataliwa waziwazi na njia ya mipangilio.
-> Ikiwa unaunganisha kutoka kifaa kingine, tumia `http://<tailscale-ip>:27123`.
+> The**Obsidian Eneo la REST API** programu-jalizi lazima isakinishwe na kuendeshwa. Kiolesura chake REST kinasikiza**HTTP `127.0.0.1:27123`** (msingi msingi URL). Port `27124` ni _separate_ MCP/HTTPS mwisho na imekataliwa waziwazi na njia ya mipangilio. Ikiwa unaunganisha kutoka kwa kifaa kingine, tumia `http://<tailscale-ip>:27123`.
 
 ### Vifunguo vya usanidi (SQLite `key_value`, nafasi ya majina `obsidian`)
 
-| Ufunguo           | Madhumuni                                                         | Imesimbwa fiche |
-| ----------------- | ----------------------------------------------------------------- | --------------- |
-| `api_key`         | Tokeni ya bearer ya Local REST API                                | ndiyo           |
-| `base_url`        | URL ya msingi ya REST (chaguomsingi `http://127.0.0.1:27123`)     | hapana          |
-| `vault_path`      | Njia kamili ya saraka ya vault (kwa ulandanishi)                  | hapana          |
-| `webdav_username` | Jina la mtumiaji la WebDAV lililozalishwa (ulandanisaji wa vault) | hapana          |
-| `webdav_password` | Nenosiri la WebDAV lililozalishwa (ulandanisaji wa vault)         | ndiyo           |
-| `webdav_enabled`  | Ikiwa ulandanishaji wa vault wa WebDAV umewezeshwa                | hapana          |
+| Ufunguo           | Kusudi                                                   | Imesimbwa kwa njia fiche |
+| ----------------- | -------------------------------------------------------- | ------------------------ |
+| `api_key`         | Tokeni ya mtoaji wa REST API                             | ndio                     |
+| `base_url`        | REST msingi URL ( `http://127.0.0.1:27123` chaguomsingi) | hapana                   |
+| `vault_path`      | Njia kamili ya saraka ya vault (ya kusawazisha)          | hapana                   |
+| `webdav_username` | Jina la mtumiaji la WebDAV (usawazishaji wa vault)       | hapana                   |
+| `webdav_password` | Nenosiri la WebDAV lililotolewa (usawazishaji wa vault)  | ndio                     |
+| `webdav_enabled`  | Iwapo usawazishaji wa WebDAV vault umewezeshwa           | hapana                   |
 
 ### Sanidi kupitia REST
 
 ```bash
-# Hifadhi + thibitisha tokeni ya Local REST API (POST huthibitisha kupitia ukaguzi wa hali)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# Kagua hali ya muunganisho (hurejesha connected, hasToken, baseUrl, vaultPath)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# Kata muunganisho (hufuta tokeni iliyohifadhiwa)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-Mbinu zote zinahitaji uthibitishaji wa dashibodi. `POST` hukataa URL yoyote kwenye porti `27124`
-na huthibitisha tokeni kwa kuita endpoint ya hali ya Local REST API kabla ya kuihifadhi.
+Mbinu zote zinahitaji uthibitishaji wa dashibodi. `POST` inakataa URL yoyote kwenye bandari `27124` na kuhalalisha tokeni kwa kupiga mahali pa mwisho wa hali ya REST API kabla ya kuendelea.
 
-### Ulandanishaji wa vault wa WebDAV
+### WebDAV kusawazisha vault
 
-`src/app/api/settings/obsidian/webdav/route.ts` hudhibiti ulandanishaji wa hiari wa
-vault unaotumia WebDAV (unaoendeshwa na `src/lib/obsidianSync.ts`). Kuuwezesha huielekeza OmniRoute kwenye
-saraka ya vault ya ndani na huzalisha jozi nasibu ya jina la mtumiaji/nenosiri la WebDAV:
+`src/app/api/settings/obsidian/webdav/route.ts` inasimamia ulandanishi wa hiari unaoungwa mkono na WebDAV (unaoendeshwa na `src/lib/obsidianSync.ts`). Kuiwezesha inaelekeza OmniRoute kwenye saraka ya vault ya ndani na inaunda jozi WebDAV username/password bila mpangilio:
 
 ```bash
-# Wezesha ulandanishaji wa WebDAV kwa saraka ya vault (huzalisha jina la mtumiaji/nenosiri)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# Pata hali ya ulandanishaji wa WebDAV (vitambulisho hurejeshwa tu wakati umewezeshwa)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# Lemaza ulandanishaji wa WebDAV (hufuta vitambulisho + .stignore inayodhibitiwa)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
-### Chanzo cha muktadha kwa kila ufunguo wa API (hiari)
+### Usalama na Usafiri
 
-Usanidi wa Obsidian unaweza kuwekewa upeo **kwa kila ufunguo wa API** kupitia jedwali la `api_key_context_sources`
-(`src/lib/db/apiKeyContextSources.ts`). Wakati mwito wa MCP unapokuwa na kitambulisho cha ufunguo wa API
-kilichothibitishwa, `getObsidianConfigForApiKey()` hupendelea tokeni/URL-msingi/njia-ya-vault
-ya ufunguo huo (`source: "api_key"`) na vinginevyo hutumia usanidi wa jumla kama mbadala (`source: "global"`).
+uthibitishaji wa WebDAV hutekeleza ufuatiliaji wa kutofaulu kwa IP-kwa-IP na kufungia nje (majaribio 10 yasiyofaulu ndani ya dirisha la sekunde 60 husababisha kufungwa kwa dakika 5 na `429 Too Many Requests` na `Retry-After`). Kwa sababu WebDAV hutuma vitambulisho vya Msingi vya uthibitishaji, kukomesha TLS (au kuelekeza juu ya handaki salama kama vile Tailscale au Cloudflare Tunnel) kunapendekezwa sana wakati wa kufikia ncha ya WebDAV nje ya kitanzi.
 
-Zana za MCP zisizo za ulandanishaji zinahitaji utambulisho wa mwitaji uliotambuliwa kabla ya kusoma usanidi huu.
-Mwitaji asiye na utambulisho hupokea `Obsidian API token not configured`, na hakuna ombi la vault
-linalotumwa. Wapigaji wa HTTP hutambuliwa kupitia vitambulisho vya maombi yao; wapigaji wa stdio
-wanaweza kutambuliwa kupitia `OMNIROUTE_API_KEY` au `ROUTER_API_KEY`. Mwitaji wa HTTP ambaye
-hajatambuliwa hawezi kurithi utambulisho wa mazingira wa seva. Vitambulisho vya kishikilia-nafasi pekee haviidhinishi
-ufikiaji; kitambulisho halali cha mazingira kinachotambuliwa kama `env-key` bado kinaauniwa.
-Funguo zilizothibitishwa bila usanidi wa Obsidian wa kila ufunguo huendelea kutumia usanidi wa jumla kama mbadala.
-Zana nne za `obsidian_sync_*` hudumisha tabia yake tofauti ya tokeni ya ulandanishaji.
+### Chanzo cha muktadha wa ufunguo wa API (si lazima)
+
+usanidi Obsidian unaweza kuchunguzwa** kwa ufunguo wa API** kupitia jedwali `api_key_context_sources` (`src/lib/db/apiKeyContextSources.ts`). Simu MCP inapobeba kitambulisho cha ufunguo cha API kilichothibitishwa, `getObsidianConfigForApiKey()` hupendelea token/base-URL/vault-path ya ufunguo huo mwenyewe (`source: "api_key"`) na vinginevyo inarudi kwenye usanidi wa kimataifa (`source: "global"`).
+
+Zana MCP zisizosawazisha zinahitaji kitambulisho cha mpigaji aliyesuluhishwa kabla ya kusoma usanidi huu. Mpigaji simu bila kitambulisho hupokea `Obsidian API token not configured`, na hakuna ombi la kuhifadhi linatumwa. wapiga HTTP hutatua kupitia hati zao za ombi; wapiga simu wa stdio wanaweza kutatua kupitia `OMNIROUTE_API_KEY` au `ROUTER_API_KEY`. Mpigaji simu HTTP ambaye hajatatuliwa hawezi kurithi utambulisho wa mazingira ya seva. Kishika nafasi IDs pekee hakiidhinishi ufikiaji; kitambulisho halali cha mazingira ambacho kinatatua kwa `env-key` kinasalia kuungwa mkono. Vifunguo vilivyoidhinishwa bila usanidi wa Obsidian kwa kila ufunguo huhifadhi hali mbadala ya kimataifa. Zana nne `obsidian_sync_*` huweka tabia zao tofauti za kusawazisha.
 
 ## Zana za MCP (22)
 

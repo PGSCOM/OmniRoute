@@ -32,87 +32,65 @@ Klien (`src/lib/obsidian/api.ts`) membalut Local REST API dengan:
 
 ## Persediaan
 
-**Tiada pemboleh ubah persekitaran** untuk token atau URL asas Obsidian — kedua-duanya
-disimpan dalam jadual SQLite `key_value` (ruang nama `obsidian`) melalui
-`src/lib/db/obsidian.ts`. Token tersebut **disulitkan ketika disimpan** (AES-256-GCM,
-dengan sandaran keserasian ke belakang teks biasa). Konfigurasikannya daripada tab
-**Sumber Konteks** pada papan pemuka Endpoint (`ObsidianSourceCard`), atau melalui API
-REST tetapan.
+ada** tiada pembolehubah persekitaran** untuk token Obsidian atau asas URL — kedua-duanya disimpan dalam jadual SQLite `key_value` (ruang nama `obsidian`) melalui `src/lib/db/obsidian.ts`. Tokennya ialah** disulitkan semasa rehat** (AES-256-GCM, dengan plaintext backward-compat fallback). Konfigurasikan daripada** Sumber Konteks** tab papan pemuka Endpoint (`ObsidianSourceCard`), atau melalui tetapan REST API.
 
 > [!IMPORTANT]
-> Pemalam **Obsidian Local REST API** mesti dipasang dan berjalan. Antara muka REST-nya
-> mendengar pada **HTTP `127.0.0.1:27123`** (URL asas lalai). Port `27124` ialah titik
-> akhir MCP/HTTPS yang _berasingan_ dan ditolak secara jelas oleh laluan tetapan.
-> Jika menyambung daripada peranti lain, gunakan `http://<tailscale-ip>:27123`.
+> The**Obsidian REST tempatan API** pemalam mesti dipasang dan dijalankan. Antara muka REST didengari**HTTP `127.0.0.1:27123`** (dasar lalai URL). Port `27124` ialah titik akhir MCP/HTTPS _separate_ dan ditolak secara eksplisit oleh laluan tetapan. Jika menyambung daripada peranti lain, gunakan `http://<tailscale-ip>:27123`.
 
 ### Kekunci konfigurasi (SQLite `key_value`, ruang nama `obsidian`)
 
-| Kekunci           | Tujuan                                                        | Disulitkan |
-| ----------------- | ------------------------------------------------------------- | ---------- |
-| `api_key`         | Token pembawa Local REST API                                  | ya         |
-| `base_url`        | URL asas REST (lalai `http://127.0.0.1:27123`)                | tidak      |
-| `vault_path`      | Laluan mutlak ke direktori peti simpanan (untuk penyegerakan) | tidak      |
-| `webdav_username` | Nama pengguna WebDAV yang dijana (penyegerakan peti simpanan) | tidak      |
-| `webdav_password` | Kata laluan WebDAV yang dijana (penyegerakan peti simpanan)   | ya         |
-| `webdav_enabled`  | Sama ada penyegerakan peti simpanan WebDAV didayakan          | tidak      |
+| kunci             | Tujuan                                                      | Disulitkan |
+| ----------------- | ----------------------------------------------------------- | ---------- |
+| `api_key`         | Token pembawa REST API tempatan                             | ya         |
+| `base_url`        | REST asas URL ( `http://127.0.0.1:27123` lalai )            | tidak      |
+| `vault_path`      | Laluan mutlak ke direktori bilik kebal (untuk penyegerakan) | tidak      |
+| `webdav_username` | Nama pengguna WebDAV yang dijana (penyegerakan bilik kebal) | tidak      |
+| `webdav_password` | Kata laluan WebDAV yang dijana (penyegerakan bilik kebal)   | ya         |
+| `webdav_enabled`  | Sama ada penyegerakan bilik kebal WebDAV didayakan          | tidak      |
 
-### Konfigurasi melalui REST
+### Konfigurasikan melalui REST
 
 ```bash
-# Simpan + sahkan token Local REST API (POST mengesahkan melalui semakan status)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# Semak status sambungan (mengembalikan connected, hasToken, baseUrl, vaultPath)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# Putuskan sambungan (mengosongkan token yang disimpan)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-Semua kaedah memerlukan pengesahan papan pemuka. `POST` menolak sebarang URL pada port
-`27124` dan mengesahkan token dengan memanggil titik akhir status Local REST API sebelum
-menyimpannya.
+Semua kaedah memerlukan pengesahan papan pemuka. `POST` menolak sebarang URL pada port `27124` dan mengesahkan token dengan memanggil titik akhir status REST API setempat sebelum meneruskan.
 
-### Penyegerakan peti simpanan WebDAV
+### penyegerakan bilik kebal WebDAV
 
-`src/app/api/settings/obsidian/webdav/route.ts` mengurus penyegerakan peti simpanan
-pilihan yang disokong WebDAV (dikendalikan oleh `src/lib/obsidianSync.ts`).
-Mendayakannya menghalakan OmniRoute ke direktori peti simpanan setempat dan menjana
-pasangan nama pengguna/kata laluan WebDAV secara rawak:
+`src/app/api/settings/obsidian/webdav/route.ts` menguruskan penyegerakan peti besi disokong WebDAV pilihan (didorong oleh `src/lib/obsidianSync.ts`). Mendayakannya menunjuk OmniRoute pada direktori peti besi tempatan dan menghasilkan pasangan WebDAV username/password rawak:
 
 ```bash
-# Dayakan penyegerakan WebDAV untuk direktori peti simpanan (menjana nama pengguna/kata laluan)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# Dapatkan status penyegerakan WebDAV (kelayakan dikembalikan hanya semasa didayakan)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# Nyahdayakan penyegerakan WebDAV (mengosongkan kelayakan + .stignore terurus)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
-### Sumber konteks mengikut kekunci API (pilihan)
+### Keselamatan & Pengangkutan
 
-Konfigurasi Obsidian boleh diskopkan **mengikut kekunci API** melalui jadual
-`api_key_context_sources` (`src/lib/db/apiKeyContextSources.ts`). Apabila panggilan MCP
-membawa id kekunci API yang disahkan, `getObsidianConfigForApiKey()` mengutamakan
-token/URL-asas/laluan-peti-simpanan kekunci itu sendiri (`source: "api_key"`) dan jika
-tiada, kembali kepada konfigurasi global (`source: "global"`).
+pengesahan WebDAV menguatkuasakan penjejakan kegagalan setiap IP dan kunci keluar (10 percubaan yang gagal dalam tetingkap 60 saat mencetuskan kunci keluar 5 minit dengan `429 Too Many Requests` dan `Retry-After`). Oleh kerana WebDAV menghantar bukti kelayakan pengesahan Asas, menamatkan TLS (atau penghalaan melalui terowong selamat seperti Tailscale atau Terowong Cloudflare ) amat disyorkan apabila mengakses titik akhir WebDAV di luar gelung balik.
 
-Alat MCP bukan penyegerakan memerlukan identiti pemanggil yang telah dikenal pasti
-sebelum membaca konfigurasi ini. Pemanggil tanpa identiti menerima
-`Obsidian API token not configured`, dan tiada permintaan peti simpanan dihantar.
-Pemanggil HTTP dikenal pasti melalui kelayakan permintaan mereka; pemanggil stdio boleh
-dikenal pasti melalui `OMNIROUTE_API_KEY` atau `ROUTER_API_KEY`. Pemanggil HTTP yang
-tidak dikenal pasti tidak boleh mewarisi identiti persekitaran pelayan. ID ruang letak
-sahaja tidak membenarkan akses; kelayakan persekitaran sah yang dikenal pasti sebagai
-`env-key` kekal disokong. Kekunci yang disahkan tanpa konfigurasi Obsidian khusus
-kekunci mengekalkan sandaran global. Empat alat `obsidian_sync_*` mengekalkan gelagat
-token penyegerakan yang berasingan.
+### Sumber konteks per-API-key (pilihan)
+
+Obsidian config boleh skop** setiap kunci API** melalui jadual `api_key_context_sources` (`src/lib/db/apiKeyContextSources.ts`). Apabila panggilan MCP membawa id kunci API yang disahkan, `getObsidianConfigForApiKey()` memilih token/base-URL/vault-path (`source: "api_key"`) kunci itu sendiri dan sebaliknya kembali kepada konfigurasi global (`source: "global"`).
+
+Alat MCP tidak segerak memerlukan identiti pemanggil yang diselesaikan sebelum membaca konfigurasi ini. Pemanggil tanpa identiti menerima `Obsidian API token not configured`, dan tiada permintaan peti besi dihantar. pemanggil HTTP menyelesaikan melalui kelayakan permintaan mereka; pemanggil stdio boleh menyelesaikan melalui `OMNIROUTE_API_KEY` atau `ROUTER_API_KEY`. Pemanggil HTTP yang belum diselesaikan tidak boleh mewarisi identiti persekitaran pelayan. IDs pemegang tempat sahaja tidak membenarkan akses; kelayakan persekitaran yang sah yang memutuskan kepada `env-key` kekal disokong. Kekunci yang disahkan tanpa konfigurasi Obsidian setiap kekunci mengekalkan sandaran global. Empat alat `obsidian_sync_*` mengekalkan gelagat token penyegerakan yang berasingan.
 
 ## Alat MCP (22)
 

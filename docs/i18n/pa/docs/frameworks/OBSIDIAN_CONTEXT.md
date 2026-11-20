@@ -30,83 +30,67 @@ Obsidian ਕਮਾਂਡਾਂ ਚਲਾ ਸਕਣ ਅਤੇ (ਵਿਕਲਪਿ
   (`27123` ਉੱਤੇ HTTP, `27124` ਉੱਤੇ MCP ਐਂਡਪੌਇੰਟ **ਨਹੀਂ**) ਅਤੇ Tailscale ਰੂਪ ਬਾਰੇ ਦੱਸਦਾ ਹੈ।
 - ਵਾਲਟ-ਸਾਪੇਖ **ਪਾਥ ਐਨਕੋਡਿੰਗ**, ਤਾਂ ਜੋ ਖਾਲੀ ਥਾਵਾਂ/ਸਲੈਸ਼ਾਂ ਵਾਲੇ ਨੋਟ ਪਾਥ ਸੁਰੱਖਿਅਤ ਰਹਿਣ।
 
-## ਸੈੱਟਅੱਪ
+## ਸਥਾਪਨਾ ਕਰਨਾ
 
-Obsidian ਟੋਕਨ ਜਾਂ ਬੇਸ URL ਲਈ **ਕੋਈ environment variable ਨਹੀਂ ਹੈ** — ਦੋਵੇਂ
-`src/lib/db/obsidian.ts` ਰਾਹੀਂ SQLite `key_value` ਟੇਬਲ (namespace `obsidian`) ਵਿੱਚ
-ਸਟੋਰ ਕੀਤੇ ਜਾਂਦੇ ਹਨ। ਟੋਕਨ **ਸਟੋਰ ਕੀਤੀ ਹਾਲਤ ਵਿੱਚ encrypted** ਹੁੰਦਾ ਹੈ (AES-256-GCM, ਨਾਲ
-plaintext backward-compat fallback)। Endpoint ਡੈਸ਼ਬੋਰਡ ਦੀ **Context Sources** ਟੈਬ
-(`ObsidianSourceCard`) ਤੋਂ, ਜਾਂ settings REST API ਰਾਹੀਂ ਕੌਂਫਿਗਰ ਕਰੋ।
+ਉੱਥੇ ਹੈ** ਕੋਈ ਵਾਤਾਵਰਣ ਵੇਰੀਏਬਲ ਨਹੀਂ** Obsidian ਟੋਕਨ ਜਾਂ ਬੇਸ URL — ਲਈ ਦੋਵੇਂ SQLite `key_value` ਟੇਬਲ (ਨੇਮਸਪੇਸ `obsidian`) ਵਿੱਚ `src/lib/db/obsidian.ts` ਰਾਹੀਂ ਸਟੋਰ ਕੀਤੇ ਜਾਂਦੇ ਹਨ। ਟੋਕਨ ਹੈ** ਆਰਾਮ 'ਤੇ ਐਨਕ੍ਰਿਪਟਡ** (AES-256-GCM, ਪਲੇਨਟੈਕਸਟ ਬੈਕਵਰਡ-ਕੰਪੈਟ ਫਾਲਬੈਕ ਦੇ ਨਾਲ)। ਤੋਂ ਕੌਂਫਿਗਰ ਕਰੋ** ਸੰਦਰਭ ਸਰੋਤ** ਐਂਡਪੁਆਇੰਟ ਡੈਸ਼ਬੋਰਡ (`ObsidianSourceCard`) ਦੀ ਟੈਬ, ਜਾਂ ਸੈਟਿੰਗਾਂ REST API ਰਾਹੀਂ।
 
 > [!IMPORTANT]
-> **Obsidian Local REST API** ਪਲੱਗਇਨ ਇੰਸਟਾਲ ਅਤੇ ਚੱਲ ਰਿਹਾ ਹੋਣਾ ਲਾਜ਼ਮੀ ਹੈ। ਇਸਦਾ REST
-> ਇੰਟਰਫੇਸ **HTTP `127.0.0.1:27123`** (ਡਿਫੌਲਟ ਬੇਸ URL) ਉੱਤੇ ਸੁਣਦਾ ਹੈ। ਪੋਰਟ `27124`
-> ਇੱਕ _ਵੱਖਰਾ_ MCP/HTTPS endpoint ਹੈ ਅਤੇ settings route ਵੱਲੋਂ ਸਪਸ਼ਟ ਤੌਰ 'ਤੇ ਰੱਦ ਕੀਤਾ ਜਾਂਦਾ ਹੈ।
-> ਜੇ ਕਿਸੇ ਹੋਰ ਡਿਵਾਈਸ ਤੋਂ ਕਨੈਕਟ ਕਰ ਰਹੇ ਹੋ, ਤਾਂ `http://<tailscale-ip>:27123` ਵਰਤੋ।
+> ਦ**Obsidian ਸਥਾਨਕ REST API** ਪਲੱਗਇਨ ਸਥਾਪਿਤ ਅਤੇ ਚੱਲਣਾ ਲਾਜ਼ਮੀ ਹੈ। ਇਸ ਦਾ REST ਇੰਟਰਫੇਸ ਸੁਣਦਾ ਹੈ**HTTP `127.0.0.1:27123`** (ਡਿਫਾਲਟ ਅਧਾਰ URL)। ਪੋਰਟ `27124` ਇੱਕ _separate_ MCP/HTTPS ਐਂਡਪੁਆਇੰਟ ਹੈ ਅਤੇ ਸੈਟਿੰਗਾਂ ਰੂਟ ਦੁਆਰਾ ਸਪਸ਼ਟ ਤੌਰ 'ਤੇ ਅਸਵੀਕਾਰ ਕੀਤਾ ਗਿਆ ਹੈ। ਜੇਕਰ ਕਿਸੇ ਹੋਰ ਡਿਵਾਈਸ ਤੋਂ ਜੁੜ ਰਹੇ ਹੋ, ਤਾਂ `http://<tailscale-ip>:27123` ਵਰਤੋਂ ਕਰੋ।
 
-### ਕੌਂਫਿਗਰੇਸ਼ਨ ਕੁੰਜੀਆਂ (SQLite `key_value`, namespace `obsidian`)
+### ਸੰਰਚਨਾ ਕੁੰਜੀਆਂ (SQLite `key_value`, ਨੇਮਸਪੇਸ `obsidian`)
 
-| ਕੁੰਜੀ             | ਉਦੇਸ਼                                          | Encrypted |
+| ਕੁੰਜੀ             | ਮਕਸਦ                                           | ਐਨਕ੍ਰਿਪਟਡ |
 | ----------------- | ---------------------------------------------- | --------- |
-| `api_key`         | Local REST API bearer ਟੋਕਨ                     | ਹਾਂ       |
-| `base_url`        | REST ਬੇਸ URL (ਡਿਫੌਲਟ `http://127.0.0.1:27123`) | ਨਹੀਂ      |
-| `vault_path`      | vault ਡਾਇਰੈਕਟਰੀ ਦਾ absolute path (sync ਲਈ)     | ਨਹੀਂ      |
-| `webdav_username` | ਤਿਆਰ ਕੀਤਾ WebDAV username (vault sync)         | ਨਹੀਂ      |
-| `webdav_password` | ਤਿਆਰ ਕੀਤਾ WebDAV password (vault sync)         | ਹਾਂ       |
-| `webdav_enabled`  | ਕੀ WebDAV vault sync ਸਮਰੱਥ ਹੈ                  | ਨਹੀਂ      |
+| `api_key`         | ਸਥਾਨਕ REST API ਬੇਅਰਰ ਟੋਕਨ                      | ਹਾਂ       |
+| `base_url`        | REST ਬੇਸ URL (ਡਿਫਾਲਟ `http://127.0.0.1:27123`) | ਨਹੀਂ      |
+| `vault_path`      | ਵਾਲਟ ਡਾਇਰੈਕਟਰੀ ਦਾ ਪੂਰਾ ਮਾਰਗ (ਸਿੰਕ ਲਈ)          | ਨਹੀਂ      |
+| `webdav_username` | ਤਿਆਰ ਕੀਤਾ WebDAV ਉਪਭੋਗਤਾ ਨਾਮ (ਵਾਲਟ ਸਿੰਕ)       | ਨਹੀਂ      |
+| `webdav_password` | ਤਿਆਰ ਕੀਤਾ WebDAV ਪਾਸਵਰਡ (ਵਾਲਟ ਸਿੰਕ)            | ਹਾਂ       |
+| `webdav_enabled`  | ਕੀ WebDAV ਵਾਲਟ ਸਮਕਾਲੀਕਰਨ ਯੋਗ ਹੈ                | ਨਹੀਂ      |
 
 ### REST ਰਾਹੀਂ ਕੌਂਫਿਗਰ ਕਰੋ
 
 ```bash
-# Local REST API ਟੋਕਨ ਨੂੰ ਸੰਭਾਲੋ + ਪ੍ਰਮਾਣਿਤ ਕਰੋ (POST ਇੱਕ status check ਰਾਹੀਂ ਪ੍ਰਮਾਣਿਤ ਕਰਦਾ ਹੈ)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# ਕਨੈਕਸ਼ਨ ਸਥਿਤੀ ਜਾਂਚੋ (connected, hasToken, baseUrl, vaultPath ਵਾਪਸ ਕਰਦਾ ਹੈ)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# ਡਿਸਕਨੈਕਟ ਕਰੋ (ਸਟੋਰ ਕੀਤਾ ਟੋਕਨ ਹਟਾਉਂਦਾ ਹੈ)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-ਸਾਰੇ ਢੰਗਾਂ ਲਈ ਡੈਸ਼ਬੋਰਡ authentication ਲੋੜੀਂਦੀ ਹੈ। `POST` ਪੋਰਟ `27124` ਉੱਤੇ ਕਿਸੇ ਵੀ URL
-ਨੂੰ ਰੱਦ ਕਰਦਾ ਹੈ ਅਤੇ ਸਥਾਈ ਤੌਰ 'ਤੇ ਸਟੋਰ ਕਰਨ ਤੋਂ ਪਹਿਲਾਂ Local REST API status endpoint ਨੂੰ ਕਾਲ ਕਰਕੇ ਟੋਕਨ ਨੂੰ ਪ੍ਰਮਾਣਿਤ ਕਰਦਾ ਹੈ।
+ਸਾਰੀਆਂ ਵਿਧੀਆਂ ਲਈ ਡੈਸ਼ਬੋਰਡ ਪ੍ਰਮਾਣਿਕਤਾ ਦੀ ਲੋੜ ਹੁੰਦੀ ਹੈ। `POST` ਪੋਰਟ `27124` 'ਤੇ ਕਿਸੇ ਵੀ URL ਅਸਵੀਕਾਰ ਕਰਦਾ ਹੈ ਅਤੇ ਕਾਇਮ ਰਹਿਣ ਤੋਂ ਪਹਿਲਾਂ ਸਥਾਨਕ REST API ਸਟੇਟਸ ਐਂਡਪੁਆਇੰਟ 'ਤੇ ਕਾਲ ਕਰਕੇ ਟੋਕਨ ਨੂੰ ਪ੍ਰਮਾਣਿਤ ਕਰਦਾ ਹੈ।
 
-### WebDAV vault sync
+### WebDAV ਵਾਲਟ ਸਿੰਕ
 
-`src/app/api/settings/obsidian/webdav/route.ts` ਇੱਕ ਵਿਕਲਪਿਕ WebDAV-backed
-vault sync ਦਾ ਪ੍ਰਬੰਧਨ ਕਰਦਾ ਹੈ (ਜਿਸਨੂੰ `src/lib/obsidianSync.ts` ਚਲਾਉਂਦਾ ਹੈ)। ਇਸਨੂੰ ਸਮਰੱਥ ਕਰਨ ਨਾਲ OmniRoute ਨੂੰ ਇੱਕ
-ਲੋਕਲ vault ਡਾਇਰੈਕਟਰੀ ਵੱਲ ਨਿਰਦੇਸ਼ਿਤ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਅਤੇ ਇੱਕ random WebDAV username/password ਜੋੜਾ ਬਣਾਇਆ ਜਾਂਦਾ ਹੈ:
+`src/app/api/settings/obsidian/webdav/route.ts` ਇੱਕ ਵਿਕਲਪਿਕ WebDAV-ਬੈਕਡ ਵਾਲਟ ਸਿੰਕ ( `src/lib/obsidianSync.ts` ਦੁਆਰਾ ਸੰਚਾਲਿਤ) ਦਾ ਪ੍ਰਬੰਧਨ ਕਰਦਾ ਹੈ। ਇਸਨੂੰ ਸਮਰੱਥ ਕਰਨਾ ਇੱਕ ਸਥਾਨਕ ਵਾਲਟ ਡਾਇਰੈਕਟਰੀ 'ਤੇ OmniRoute ਨੂੰ ਪੁਆਇੰਟ ਕਰਦਾ ਹੈ ਅਤੇ ਇੱਕ ਬੇਤਰਤੀਬ WebDAV username/password ਜੋੜੀ ਨੂੰ ਜੋੜਦਾ ਹੈ:
 
 ```bash
-# ਇੱਕ vault ਡਾਇਰੈਕਟਰੀ ਲਈ WebDAV sync ਸਮਰੱਥ ਕਰੋ (username/password ਬਣਾਉਂਦਾ ਹੈ)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# WebDAV sync ਸਥਿਤੀ ਪ੍ਰਾਪਤ ਕਰੋ (credentials ਸਿਰਫ਼ ਸਮਰੱਥ ਹੋਣ ਦੌਰਾਨ ਵਾਪਸ ਕੀਤੇ ਜਾਂਦੇ ਹਨ)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# WebDAV sync ਅਸਮਰੱਥ ਕਰੋ (credentials + ਪ੍ਰਬੰਧਿਤ .stignore ਹਟਾਉਂਦਾ ਹੈ)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
-### ਪ੍ਰਤੀ-API-key context source (ਵਿਕਲਪਿਕ)
+### ਸੁਰੱਖਿਆ ਅਤੇ ਆਵਾਜਾਈ
 
-Obsidian config ਨੂੰ `api_key_context_sources` ਟੇਬਲ ਰਾਹੀਂ **ਹਰੇਕ API key ਮੁਤਾਬਕ**
-ਸੀਮਿਤ ਕੀਤਾ ਜਾ ਸਕਦਾ ਹੈ (`src/lib/db/apiKeyContextSources.ts`)। ਜਦੋਂ ਕੋਈ MCP call ਇੱਕ authenticated API
-key id ਲੈ ਕੇ ਆਉਂਦੀ ਹੈ, ਤਾਂ `getObsidianConfigForApiKey()` ਉਸ key ਦੇ ਆਪਣੇ token/base-URL/vault-path
-(`source: "api_key"`) ਨੂੰ ਤਰਜੀਹ ਦਿੰਦਾ ਹੈ ਅਤੇ ਨਹੀਂ ਤਾਂ global config (`source: "global"`) ਨੂੰ fallback ਵਜੋਂ ਵਰਤਦਾ ਹੈ।
+WebDAV ਪ੍ਰਮਾਣਿਕਤਾ ਪ੍ਰਤੀ-IP ਅਸਫਲਤਾ ਟਰੈਕਿੰਗ ਅਤੇ ਤਾਲਾਬੰਦੀ ਨੂੰ ਲਾਗੂ ਕਰਦੀ ਹੈ (60-ਸਕਿੰਟ ਵਿੰਡੋ ਦੇ ਅੰਦਰ 10 ਅਸਫਲ ਕੋਸ਼ਿਸ਼ਾਂ `429 Too Many Requests` ਅਤੇ `Retry-After` ਨਾਲ 5-ਮਿੰਟ ਦੇ ਤਾਲਾਬੰਦੀ ਨੂੰ ਚਾਲੂ ਕਰਦੀਆਂ ਹਨ)। ਕਿਉਂਕਿ WebDAV ਬੇਸਿਕ ਪ੍ਰਮਾਣੀਕਰਨ ਪ੍ਰਮਾਣ ਪੱਤਰਾਂ ਨੂੰ ਪ੍ਰਸਾਰਿਤ ਕਰਦਾ ਹੈ, ਲੂਪਬੈਕ ਤੋਂ ਬਾਹਰ WebDAV ਐਂਡਪੁਆਇੰਟ ਤੱਕ ਪਹੁੰਚ ਕਰਨ ਵੇਲੇ TLS (ਜਾਂ ਇੱਕ ਸੁਰੱਖਿਅਤ ਸੁਰੰਗ ਜਿਵੇਂ ਕਿ Tailscale ਜਾਂ Cloudflare ਟਨਲ ਉੱਤੇ ਰੂਟਿੰਗ) ਨੂੰ ਬੰਦ ਕਰਨ ਦੀ ਜ਼ੋਰਦਾਰ ਸਿਫਾਰਸ਼ ਕੀਤੀ ਜਾਂਦੀ ਹੈ।
 
-Non-sync MCP tools ਨੂੰ ਇਹ ਕੌਂਫਿਗਰੇਸ਼ਨ ਪੜ੍ਹਨ ਤੋਂ ਪਹਿਲਾਂ ਇੱਕ resolved caller identity ਦੀ ਲੋੜ ਹੁੰਦੀ ਹੈ।
-ਪਛਾਣ ਤੋਂ ਬਿਨਾਂ caller ਨੂੰ `Obsidian API token not configured` ਮਿਲਦਾ ਹੈ, ਅਤੇ ਕੋਈ vault
-request ਨਹੀਂ ਭੇਜੀ ਜਾਂਦੀ। HTTP callers ਆਪਣੇ request credentials ਰਾਹੀਂ resolve ਹੁੰਦੇ ਹਨ; stdio callers
-`OMNIROUTE_API_KEY` ਜਾਂ `ROUTER_API_KEY` ਰਾਹੀਂ resolve ਹੋ ਸਕਦੇ ਹਨ। ਇੱਕ unresolved HTTP caller
-server ਦੀ environment identity ਨੂੰ inherit ਨਹੀਂ ਕਰ ਸਕਦਾ। ਸਿਰਫ਼ placeholder IDs ਪਹੁੰਚ ਨੂੰ authorize ਨਹੀਂ ਕਰਦੇ;
-ਇੱਕ valid environment credential ਜੋ `env-key` ਵਜੋਂ resolve ਹੁੰਦਾ ਹੈ, ਹਾਲੇ ਵੀ ਸਮਰਥਿਤ ਹੈ।
-ਪ੍ਰਤੀ-key Obsidian ਕੌਂਫਿਗਰੇਸ਼ਨ ਤੋਂ ਬਿਨਾਂ authenticated keys ਲਈ global fallback ਬਰਕਰਾਰ ਰਹਿੰਦਾ ਹੈ।
-ਚਾਰ `obsidian_sync_*` tools ਆਪਣਾ ਵੱਖਰਾ sync-token ਵਿਹਾਰ ਕਾਇਮ ਰੱਖਦੇ ਹਨ।
+### ਪ੍ਰਤੀ-API-ਕੁੰਜੀ ਸੰਦਰਭ ਸਰੋਤ (ਵਿਕਲਪਿਕ)
+
+Obsidian ਸੰਰਚਨਾ ਨੂੰ ਸਕੋਪ ਕੀਤਾ ਜਾ ਸਕਦਾ ਹੈ** ਪ੍ਰਤੀ API ਕੁੰਜੀ** `api_key_context_sources` ਸਾਰਣੀ (`src/lib/db/apiKeyContextSources.ts`) ਰਾਹੀਂ। ਜਦੋਂ ਇੱਕ MCP ਕਾਲ ਇੱਕ ਪ੍ਰਮਾਣਿਤ API ਕੁੰਜੀ id ਰੱਖਦਾ ਹੈ, `getObsidianConfigForApiKey()` ਉਸ ਕੁੰਜੀ ਦੀ ਆਪਣੀ token/base-URL/vault-path (`source: "api_key"`) ਨੂੰ ਤਰਜੀਹ ਦਿੰਦਾ ਹੈ ਅਤੇ ਨਹੀਂ ਤਾਂ ਗਲੋਬਲ ਸੰਰਚਨਾ (`source: "global"`) ਵਿੱਚ ਵਾਪਸ ਆ ਜਾਂਦਾ ਹੈ।
+
+ਇਸ ਸੰਰਚਨਾ ਨੂੰ ਪੜ੍ਹਨ ਤੋਂ ਪਹਿਲਾਂ ਗੈਰ-ਸਿੰਕ MCP ਟੂਲਸ ਲਈ ਇੱਕ ਹੱਲ ਕੀਤੀ ਕਾਲਰ ਪਛਾਣ ਦੀ ਲੋੜ ਹੁੰਦੀ ਹੈ। ਬਿਨਾਂ ਪਛਾਣ ਦੇ ਇੱਕ ਕਾਲਰ ਨੂੰ `Obsidian API token not configured` ਪ੍ਰਾਪਤ ਹੁੰਦਾ ਹੈ, ਅਤੇ ਕੋਈ ਵਾਲਟ ਬੇਨਤੀ ਨਹੀਂ ਭੇਜੀ ਜਾਂਦੀ ਹੈ। HTTP ਕਾਲਰ ਆਪਣੇ ਬੇਨਤੀ ਪ੍ਰਮਾਣ ਪੱਤਰਾਂ ਰਾਹੀਂ ਹੱਲ ਕਰਦੇ ਹਨ; stdio ਕਾਲਰ `OMNIROUTE_API_KEY` ਜਾਂ `ROUTER_API_KEY` ਰਾਹੀਂ ਹੱਲ ਕਰ ਸਕਦੇ ਹਨ। ਇੱਕ ਅਣਸੁਲਝਿਆ HTTP ਕਾਲਰ ਸਰਵਰ ਦੀ ਵਾਤਾਵਰਣ ਪਛਾਣ ਨੂੰ ਪ੍ਰਾਪਤ ਨਹੀਂ ਕਰ ਸਕਦਾ ਹੈ। ਪਲੇਸਹੋਲਡਰ IDs ਇਕੱਲੇ ਪਹੁੰਚ ਨੂੰ ਅਧਿਕਾਰਤ ਨਹੀਂ ਕਰਦਾ ਹੈ; ਇੱਕ ਵੈਧ ਵਾਤਾਵਰਣ ਪ੍ਰਮਾਣ ਪੱਤਰ ਜੋ `env-key` ਨੂੰ ਹੱਲ ਕਰਦਾ ਹੈ ਸਮਰਥਿਤ ਰਹਿੰਦਾ ਹੈ। ਪ੍ਰਤੀ-ਕੁੰਜੀ Obsidian ਸੰਰਚਨਾ ਤੋਂ ਬਿਨਾਂ ਪ੍ਰਮਾਣਿਤ ਕੁੰਜੀਆਂ ਗਲੋਬਲ ਫਾਲਬੈਕ ਨੂੰ ਬਰਕਰਾਰ ਰੱਖਦੀਆਂ ਹਨ। ਚਾਰ `obsidian_sync_*` ਟੂਲ ਆਪਣੇ ਵੱਖਰੇ ਸਿੰਕ-ਟੋਕਨ ਵਿਵਹਾਰ ਨੂੰ ਰੱਖਦੇ ਹਨ।
 
 ## MCP ਟੂਲ (22)
 

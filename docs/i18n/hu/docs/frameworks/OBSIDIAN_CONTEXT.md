@@ -32,89 +32,65 @@ A kliens (`src/lib/obsidian/api.ts`) a következőkkel egészíti ki a Local RES
 
 ## Beállítás
 
-Az Obsidian-tokenhoz és az alap URL-hez **nincs környezeti változó** — mindkettő
-az SQLite `key_value` táblájában (`obsidian` névtér) van tárolva a
-`src/lib/db/obsidian.ts` használatával. A token **tárolt állapotban titkosított** (AES-256-GCM,
-egyszerű szöveges visszamenőleges kompatibilitási tartalékmechanizmussal). A beállítás az
-Endpoint irányítópult **Context Sources** lapján (`ObsidianSourceCard`), vagy a beállítások
-REST API-ján keresztül végezhető el.
+Van** nincs környezeti változó** a Obsidian token vagy az alap URL — esetében mindkettő a SQLite `key_value` táblában (névtér `obsidian`) van tárolva `src/lib/db/obsidian.ts` keresztül. A token az** nyugalmi állapotban titkosítva** (AES-256-GCM, egyszerű szöveges visszakompatibilis tartalékkal). Konfigurálja a** Kontextusforrások** a Végpont irányítópult lapján (`ObsidianSourceCard`), vagy a beállításokon keresztül REST API.
 
 > [!IMPORTANT]
-> Az **Obsidian Local REST API** bővítménynek telepítve és futtatva kell lennie. A REST
-> interfésze a **HTTP `127.0.0.1:27123`** címen figyel (ez az alapértelmezett alap URL). A
-> `27124`-es port egy _különálló_ MCP/HTTPS-végpont, amelyet a beállítási útvonal kifejezetten
-> elutasít. Másik eszközről való csatlakozáshoz használja a `http://<tailscale-ip>:27123` címet.
+> A**Obsidian Helyi REST API** beépülő modulnak telepítve kell lennie és futnia kell. A REST felülete figyel**HTTP `127.0.0.1:27123`** (az alapértelmezett URL alap). A `27124` port egy _külön_ MCP/HTTPS végpont, és a beállítások útvonala kifejezetten elutasítja. Ha másik eszközről csatlakozik, használja `http://<tailscale-ip>:27123`.
 
-### Konfigurációs kulcsok (SQLite `key_value`, `obsidian` névtér)
+### Konfigurációs kulcsok (SQLite `key_value`, névtér `obsidian`)
 
-| Kulcs             | Cél                                                        | Titkosított |
+| Kulcsfontosságú   | Cél                                                        | Titkosított |
 | ----------------- | ---------------------------------------------------------- | ----------- |
-| `api_key`         | A Local REST API bearer tokenje                            | igen        |
-| `base_url`        | REST alap URL (alapértelmezett: `http://127.0.0.1:27123`)  | nem         |
-| `vault_path`      | A trezorkönyvtár abszolút elérési útja (szinkronizáláshoz) | nem         |
-| `webdav_username` | Generált WebDAV-felhasználónév (trezorszinkronizálás)      | nem         |
-| `webdav_password` | Generált WebDAV-jelszó (trezorszinkronizálás)              | igen        |
-| `webdav_enabled`  | Engedélyezve van-e a WebDAV-os trezorszinkronizálás        | nem         |
+| `api_key`         | Helyi REST API hordozó token                               | igen        |
+| `base_url`        | REST base URL (alapértelmezett `http://127.0.0.1:27123`)   | nem         |
+| `vault_path`      | A Vault könyvtár abszolút elérési útja (szinkronizáláshoz) | nem         |
+| `webdav_username` | Létrehozott WebDAV felhasználónév (vault sync)             | nem         |
+| `webdav_password` | Generált WebDAV jelszó (vault sync)                        | igen        |
+| `webdav_enabled`  | A WebDAV Vault sync engedélyezve van-e                     | nem         |
 
-### Konfigurálás REST-en keresztül
+### Konfigurálás REST keresztül
 
 ```bash
-# A Local REST API tokenjének mentése és ellenőrzése (a POST állapotellenőrzéssel validál)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# A kapcsolat állapotának ellenőrzése (a connected, hasToken, baseUrl és vaultPath mezőket adja vissza)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# Kapcsolat bontása (törli a tárolt tokent)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-Minden metódushoz szükséges az irányítópulton történő hitelesítés. A `POST` elutasít minden,
-a `27124`-es portot használó URL-t, és mentés előtt a Local REST API állapot-végpontjának
-meghívásával ellenőrzi a tokent.
+Minden módszer irányítópult-hitelesítést igényel. `POST` elutasít minden URL `27124` porton, és érvényesíti a jogkivonatot a Helyi REST API állapot-végpont meghívásával, mielőtt fennmaradna.
 
-### WebDAV-os trezorszinkronizálás
+### WebDAV Vault sync
 
-A `src/app/api/settings/obsidian/webdav/route.ts` egy opcionális, WebDAV-alapú
-trezorszinkronizálást kezel (amelyet a `src/lib/obsidianSync.ts` vezérel). Engedélyezésekor
-az OmniRoute egy helyi trezorkönyvtárra mutat, és létrehoz egy véletlenszerű
-WebDAV-felhasználónév/jelszó párost:
+`src/app/api/settings/obsidian/webdav/route.ts` egy opcionális, WebDAV által támogatott tárolószinkronizálást kezel ( `src/lib/obsidianSync.ts` által vezérelve). Engedélyezése OmniRoute egy helyi trezorkönyvtárra irányítja, és egy véletlenszerű WebDAV username/password párt alkot:
 
 ```bash
-# WebDAV-szinkronizálás engedélyezése egy trezorkönyvtárhoz (felhasználónevet/jelszót hoz létre)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# A WebDAV-szinkronizálás állapotának lekérése (a hitelesítő adatok csak engedélyezett állapotban kerülnek visszaadásra)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# WebDAV-szinkronizálás letiltása (törli a hitelesítő adatokat és a kezelt .stignore fájlt)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
+### Biztonság és közlekedés
+
+WebDAV hitelesítés IP-nkénti hibakövetést és zárolást kényszerít ki (10 sikertelen kísérlet 60 másodperces ablakon belül 5 perces zárolást vált ki `429 Too Many Requests` és `Retry-After` esetén). Mivel WebDAV alapszintű hitelesítési adatokat továbbít, TLS lezárása (vagy biztonságos alagúton, például Tailscale vagy Cloudflare Tunnel) erősen ajánlott, amikor a WebDAV végponthoz a visszahurkoláson kívül hozzáfér.
+
 ### API-kulcsonkénti kontextusforrás (opcionális)
 
-Az Obsidian konfigurációja **API-kulcsonként** korlátozható az
-`api_key_context_sources` táblán keresztül (`src/lib/db/apiKeyContextSources.ts`). Amikor
-egy MCP-hívás hitelesített API-kulcs-azonosítót tartalmaz, a `getObsidianConfigForApiKey()`
-előnyben részesíti az adott kulcs saját tokenjét/alap URL-jét/trezorútvonalát
-(`source: "api_key"`), ellenkező esetben pedig a globális konfigurációt használja
-tartalékként (`source: "global"`).
+Obsidian config lehet hatókör** API kulcsonként** a `api_key_context_sources` táblán (`src/lib/db/apiKeyContextSources.ts`) keresztül. Ha egy MCP hívás hitelesített API kulcsazonosítót hordoz, `getObsidianConfigForApiKey()` a kulcs saját token/base-URL/vault-path (`source: "api_key"`) részesíti előnyben, egyébként pedig a globális konfigurációra (`source: "global"`) kerül vissza.
 
-A nem szinkronizálási MCP-eszközöknek a konfiguráció beolvasása előtt szükségük van a
-hívó feloldott identitására. Az identitással nem rendelkező hívó az
-`Obsidian API token not configured` üzenetet kapja, és nem történik trezorkérés. A
-HTTP-hívók identitása a kérés hitelesítő adatai alapján oldódik fel; az stdio-hívóké az
-`OMNIROUTE_API_KEY` vagy a `ROUTER_API_KEY` használatával oldható fel. Egy feloldatlan
-HTTP-hívó nem örökölheti a kiszolgáló környezeti identitását. Önmagukban a helyőrző
-azonosítók nem jogosítanak hozzáférésre; az `env-key` értékre feloldódó érvényes
-környezeti hitelesítő adatok továbbra is támogatottak. A hitelesített, API-kulcsonkénti
-Obsidian-konfigurációval nem rendelkező kulcsok továbbra is használhatják a globális
-tartalékkonfigurációt. A négy `obsidian_sync_*` eszköz megtartja a saját, különálló
-szinkronizálásitoken-kezelését.
+A nem szinkronizált MCP eszközöknek feloldott hívóazonosítóra van szükségük a konfiguráció elolvasása előtt. Az identitás nélküli hívó `Obsidian API token not configured` kap, és nem küldenek tároló kérést. A HTTP hívók a kérés hitelesítő adataikon keresztül oldják meg a megoldást; Az stdio hívók `OMNIROUTE_API_KEY` vagy `ROUTER_API_KEY` segítségével oldhatják meg. A feloldatlan HTTP hívó nem örökölheti a szerver környezeti identitását. A IDs helyőrző önmagában nem engedélyezi a hozzáférést; a `env-key` feloldó érvényes környezeti hitelesítő adatok továbbra is támogatottak maradnak. A kulcsonkénti Obsidian konfiguráció nélküli hitelesített kulcsok megtartják a globális tartalékot. A négy `obsidian_sync_*` eszköz megtartja különálló szinkron-token viselkedését.
 
 ## MCP-eszközök (22)
 

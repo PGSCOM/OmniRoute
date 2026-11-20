@@ -35,87 +35,65 @@ Klient (`src/lib/obsidian/api.ts`) ümbritseb Local REST API järgmiste funktsio
 
 ## Seadistamine
 
-Obsidiani tokeni ega baas-URL-i jaoks **pole keskkonnamuutujat** — mõlemad
-salvestatakse SQLite'i tabelisse `key_value` (nimeruum `obsidian`) faili
-`src/lib/db/obsidian.ts` kaudu. Token on **jõudeolekus krüpteeritud** (AES-256-GCM,
-tagasiühilduvuse tagamiseks on olemas lihtteksti varuvariant). Seadistage see lõpp-punkti
-juhtpaneeli vahekaardil **Context Sources** (`ObsidianSourceCard`) või sätete REST API
-kaudu.
+On olemas** keskkonnamuutujat pole** Obsidian märgi või baasi URL — jaoks on mõlemad salvestatud SQLite `key_value` tabelisse (nimeruumi `obsidian`) `src/lib/db/obsidian.ts` kaudu. Märk on** krüpteeritud puhkeolekus** (AES-256-GCM, lihtteksti tagurpidi compat tagavaraga). Seadistage rakendusest** Konteksti allikad** lõpp-punkti armatuurlaua vahekaardilt (`ObsidianSourceCard`) või seadete kaudu REST API.
 
 > [!IMPORTANT]
-> Plugin **Obsidian Local REST API** peab olema installitud ja töötama. Selle REST-liides
-> kuulab aadressil **HTTP `127.0.0.1:27123`** (vaikimisi baas-URL). Port `27124` on
-> _eraldi_ MCP/HTTPS-lõpp-punkt ja sätete marsruut lükkab selle selgesõnaliselt tagasi.
-> Teisest seadmest ühenduse loomisel kasutage aadressi `http://<tailscale-ip>:27123`.
+> The**Obsidian Kohalik REST API** pistikprogramm peab olema installitud ja töötama. Selle REST liides kuulab edasi**HTTP `127.0.0.1:27123`** (vaikepõhi URL). Port `27124` on _eraldi_ MCP/HTTPS lõpp-punkt ja seadete marsruut lükkab selle selgesõnaliselt tagasi. Kui ühendate mõne muu seadmega, kasutage `http://<tailscale-ip>:27123`.
 
-### Konfiguratsioonivõtmed (SQLite'i `key_value`, nimeruum `obsidian`)
+### Konfiguratsiooniklahvid (SQLite `key_value`, nimeruum `obsidian`)
 
-| Võti              | Otstarve                                                  | Krüpteeritud |
-| ----------------- | --------------------------------------------------------- | ------------ |
-| `api_key`         | Local REST API kandjatoken                                | jah          |
-| `base_url`        | REST-i baas-URL (vaikimisi `http://127.0.0.1:27123`)      | ei           |
-| `vault_path`      | Hoidla kataloogi absoluutne tee (sünkroonimiseks)         | ei           |
-| `webdav_username` | Genereeritud WebDAV-i kasutajanimi (hoidla sünkroonimine) | ei           |
-| `webdav_password` | Genereeritud WebDAV-i parool (hoidla sünkroonimine)       | jah          |
-| `webdav_enabled`  | Kas WebDAV-i hoidla sünkroonimine on lubatud              | ei           |
+| Võti              | Eesmärk                                            | Krüpteeritud |
+| ----------------- | -------------------------------------------------- | ------------ |
+| `api_key`         | Kohalik REST API kandja märk                       | jah          |
+| `base_url`        | REST base URL (vaikimisi `http://127.0.0.1:27123`) | ei           |
+| `vault_path`      | Absoluutne tee hoidla kataloogi (sünkroonimiseks)  | ei           |
+| `webdav_username` | Loodud WebDAV kasutajanimi (võlvi sünkroonimine)   | ei           |
+| `webdav_password` | Loodud WebDAV parool (varahoidla sünkroonimine)    | jah          |
+| `webdav_enabled`  | Kas WebDAV varahoidla sünkroonimine on lubatud     | ei           |
 
-### Seadistamine REST-i kaudu
+### Seadistage REST kaudu
 
 ```bash
-# Salvesta ja valideeri Local REST API token (POST valideerib olekukontrolliga)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# Kontrolli ühenduse olekut (tagastab connected, hasToken, baseUrl, vaultPath)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# Katkesta ühendus (kustutab salvestatud tokeni)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-Kõik meetodid nõuavad juhtpaneeli autentimist. `POST` lükkab tagasi kõik pordil `27124`
-olevad URL-id ja valideerib tokeni enne salvestamist, kutsudes Local REST API
-olekulõpp-punkti.
+Kõik meetodid nõuavad armatuurlaua autentimist. `POST` lükkab tagasi kõik URL pordis `27124` ja kinnitab loa, kutsudes enne püsimist välja kohaliku REST API oleku lõpp-punkti.
 
-### WebDAV-i hoidla sünkroonimine
+### WebDAV võlvi sünkroonimine
 
-`src/app/api/settings/obsidian/webdav/route.ts` haldab valikulist WebDAV-il põhinevat
-hoidla sünkroonimist (mida juhib `src/lib/obsidianSync.ts`). Selle lubamisel suunatakse
-OmniRoute kohaliku hoidla kataloogi ning luuakse juhuslik WebDAV-i kasutajanime ja parooli
-paar:
+`src/app/api/settings/obsidian/webdav/route.ts` haldab valikulist WebDAV-ga toetatud varahoidla sünkroonimist (juhib `src/lib/obsidianSync.ts`). Selle lubamine suunab OmniRoute kohalikule varahoidla kataloogile ja loob juhusliku WebDAV username/password paari:
 
 ```bash
-# Luba hoidla kataloogi WebDAV-sünkroonimine (loob kasutajanime/parooli)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# Hangi WebDAV-sünkroonimise olek (mandaadid tagastatakse ainult siis, kui see on lubatud)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# Keela WebDAV-sünkroonimine (kustutab mandaadid ja hallatava .stignore-faili)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
+### Turvalisus ja transport
+
+WebDAV autentimine jõustab IP-põhise rikete jälgimise ja lukustamise (10 ebaõnnestunud katset 60-sekundilise akna jooksul käivitavad 5-minutilise lukustuse `429 Too Many Requests` ja `Retry-After` abil). Kuna WebDAV edastab põhiautentimise mandaate, on WebDAV lõpp-punktile juurdepääsuks väljaspool tagasisilmust tungivalt soovitatav TLS lõpetamine (või marsruutimine turvalise tunneli kaudu, nagu Tailscale või Cloudflare tunnel).
+
 ### API-võtmepõhine kontekstiallikas (valikuline)
 
-Obsidiani konfiguratsiooni saab tabeli `api_key_context_sources`
-(`src/lib/db/apiKeyContextSources.ts`) kaudu piiritleda **API-võtme põhiselt**. Kui
-MCP-kutse sisaldab autenditud API-võtme ID-d, eelistab `getObsidianConfigForApiKey()`
-selle võtme enda tokenit, baas-URL-i ja hoidla teed (`source: "api_key"`), vastasel juhul
-kasutatakse globaalset konfiguratsiooni (`source: "global"`).
+Obsidian konfiguratsiooni saab reguleerida** API klahvi kohta** `api_key_context_sources` tabeli (`src/lib/db/apiKeyContextSources.ts`) kaudu. Kui MCP -kõne kannab autentitud API -võtme ID-d, eelistab `getObsidianConfigForApiKey()` selle võtme enda token/base-URL/vault-path (`source: "api_key"`) ja muul juhul läheb tagasi globaalsele konfiguratsioonile (`source: "global"`).
 
-Sünkroonimisega mitteseotud MCP-tööriistad nõuavad enne selle konfiguratsiooni lugemist
-helistaja tuvastatud identiteeti. Identiteedita helistaja saab vastuse
-`Obsidian API token not configured` ja hoidlapäringut ei saadeta. HTTP-helistajad
-tuvastatakse nende päringu mandaatide kaudu; stdio-helistajaid saab tuvastada
-`OMNIROUTE_API_KEY` või `ROUTER_API_KEY` kaudu. Tuvastamata HTTP-helistaja ei saa
-pärida serveri keskkonnaidentiteeti. Ainult kohatäite-ID-d ei anna juurdepääsu;
-endiselt toetatakse kehtivat keskkonnamandaati, mis lahendatakse väärtuseks `env-key`.
-Autenditud võtmed, millel puudub võtmepõhine Obsidiani konfiguratsioon, kasutavad endiselt
-globaalset varuvarianti. Neli tööriista `obsidian_sync_*` säilitavad oma eraldiseisva
-sünkroonimistokeni käitumise.
+Sünkroonimata MCP tööriistad nõuavad enne selle konfiguratsiooni lugemist lahendatud helistaja identiteeti. Ilma identiteedita helistaja saab `Obsidian API token not configured` ja varahoidla päringut ei saadeta. HTTP helistajad lahendavad oma päringu mandaatide kaudu; stdio helistajad saavad lahendada `OMNIROUTE_API_KEY` või `ROUTER_API_KEY` kaudu. Lahendamata HTTP helistaja ei saa pärida serveri keskkonna identiteeti. Kohatäide IDs üksi ei luba juurdepääsu; kehtiv keskkonna mandaat, mis lahendab `env-key` jääb toetatuks. Autentitud võtmed ilma võtmepõhise Obsidian -konfiguratsioonita säilitavad globaalse varuvariandi. Neli `obsidian_sync_*` tööriista säilitavad oma sünkroonimismärgi käitumise eraldi.
 
 ## MCP tööriistad (22)
 

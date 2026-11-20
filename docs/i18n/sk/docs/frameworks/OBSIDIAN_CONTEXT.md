@@ -31,85 +31,65 @@ Klient (`src/lib/obsidian/api.ts`) poskytuje nad Local REST API tieto funkcie:
 
 ## Nastavenie
 
-Pre token ani základnú URL služby Obsidian **neexistuje žiadna premenná prostredia** — obe
-sú uložené v tabuľke SQLite `key_value` (menný priestor `obsidian`) prostredníctvom
-`src/lib/db/obsidian.ts`. Token je **zašifrovaný v úložisku** (AES-256-GCM so spätnou
-kompatibilitou pre nezašifrovaný text). Nakonfigurujte ho na karte **Zdroje kontextu**
-ovládacieho panela koncového bodu (`ObsidianSourceCard`) alebo prostredníctvom REST API
-nastavení.
+Existuje** žiadna premenná prostredia** pre token Obsidian alebo základ URL — sú obe uložené v tabuľke SQLite `key_value` (priestor názvov `obsidian`) prostredníctvom `src/lib/db/obsidian.ts`. Token je** zašifrované v pokoji** (AES-256-GCM, so spätnou kompatáciou s čistým textom). Konfigurovať z** Zdroje kontextu** záložke Endpoint dashboard (`ObsidianSourceCard`), alebo cez nastavenia REST API.
 
 > [!IMPORTANT]
-> Doplnok **Obsidian Local REST API** musí byť nainštalovaný a spustený. Jeho rozhranie
-> REST počúva na adrese **HTTP `127.0.0.1:27123`** (predvolená základná URL). Port `27124`
-> je _samostatný_ koncový bod MCP/HTTPS a trasa nastavení ho explicitne odmieta.
-> Pri pripájaní z iného zariadenia použite `http://<tailscale-ip>:27123`.
+> The**Obsidian Miestne REST API** plugin musí byť nainštalovaný a spustený. Jeho rozhranie REST počúva ďalej**HTTP `127.0.0.1:27123`** (predvolený základ URL). Port `27124` je _samostatný_ koncový bod MCP/HTTPS a je explicitne odmietnutý cestou nastavení. Ak sa pripájate z iného zariadenia, použite `http://<tailscale-ip>:27123`.
 
 ### Konfiguračné kľúče (SQLite `key_value`, menný priestor `obsidian`)
 
-| Kľúč              | Účel                                                            | Šifrované |
-| ----------------- | --------------------------------------------------------------- | --------- |
-| `api_key`         | Nosný token lokálneho REST API                                  | áno       |
-| `base_url`        | Základná URL REST (predvolená `http://127.0.0.1:27123`)         | nie       |
-| `vault_path`      | Absolútna cesta k adresáru trezora (na synchronizáciu)          | nie       |
-| `webdav_username` | Vygenerované používateľské meno WebDAV (synchronizácia trezora) | nie       |
-| `webdav_password` | Vygenerované heslo WebDAV (synchronizácia trezora)              | áno       |
-| `webdav_enabled`  | Či je povolená synchronizácia trezora cez WebDAV                | nie       |
+| kľúč              | Účel                                                            | Zašifrované |
+| ----------------- | --------------------------------------------------------------- | ----------- |
+| `api_key`         | Miestny token REST API nosiča                                   | áno         |
+| `base_url`        | základ REST URL (predvolené `http://127.0.0.1:27123`)           | č           |
+| `vault_path`      | Absolútna cesta k adresáru trezora (na synchronizáciu)          | č           |
+| `webdav_username` | Vygenerované používateľské meno WebDAV (synchronizácia trezoru) | č           |
+| `webdav_password` | Vygenerované heslo WebDAV (synchronizácia trezoru)              | áno         |
+| `webdav_enabled`  | Či je povolená synchronizácia trezora WebDAV                    | č           |
 
-### Konfigurácia prostredníctvom REST
+### Konfigurovať cez REST
 
 ```bash
-# Uloženie a overenie tokenu Local REST API (POST ho overí kontrolou stavu)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# Kontrola stavu pripojenia (vráti connected, hasToken, baseUrl, vaultPath)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# Odpojenie (vymaže uložený token)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-Všetky metódy vyžadujú autentifikáciu ovládacieho panela. `POST` odmietne každú URL
-na porte `27124` a pred uložením overí token zavolaním koncového bodu stavu Local REST API.
+Všetky metódy vyžadujú overenie na dashboarde. `POST` odmietne akékoľvek URL na porte `27124` a overí token volaním lokálneho koncového bodu stavu REST API pred zotrvaním.
 
-### Synchronizácia trezora cez WebDAV
+### synchronizácia trezoru WebDAV
 
-`src/app/api/settings/obsidian/webdav/route.ts` spravuje voliteľnú synchronizáciu trezora
-cez WebDAV (riadenú pomocou `src/lib/obsidianSync.ts`). Jej povolením sa OmniRoute nasmeruje
-na lokálny adresár trezora a vygeneruje sa náhodná dvojica používateľského mena a hesla WebDAV:
+`src/app/api/settings/obsidian/webdav/route.ts` spravuje voliteľnú synchronizáciu trezoru podporovanú WebDAV (riadená `src/lib/obsidianSync.ts`). Ak ho povolíte, nasmeruje OmniRoute na lokálny adresár úschovne a vytlačí náhodný pár WebDAV username/password :
 
 ```bash
-# Povolenie synchronizácie cez WebDAV pre adresár trezora (vygeneruje používateľské meno a heslo)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# Získanie stavu synchronizácie cez WebDAV (prihlasovacie údaje sa vrátia iba vtedy, keď je povolená)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# Zakázanie synchronizácie cez WebDAV (vymaže prihlasovacie údaje a spravovaný súbor .stignore)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
-### Zdroj kontextu pre jednotlivé kľúče API (voliteľné)
+### Bezpečnosť a doprava
 
-Konfiguráciu služby Obsidian možno určiť **pre každý kľúč API samostatne** prostredníctvom
-tabuľky `api_key_context_sources` (`src/lib/db/apiKeyContextSources.ts`). Keď volanie MCP
-obsahuje ID autentifikovaného kľúča API, `getObsidianConfigForApiKey()` uprednostní vlastný
-token, základnú URL a cestu k trezoru daného kľúča (`source: "api_key"`), inak použije
-globálnu konfiguráciu (`source: "global"`).
+Autentifikácia WebDAV vynucuje sledovanie zlyhaní podľa IP a uzamknutie (10 neúspešných pokusov v rámci 60-sekundového okna spustí 5-minútové uzamknutie pomocou `429 Too Many Requests` a `Retry-After`). Pretože WebDAV prenáša základné autentifikačné poverenia, pri prístupe ku koncovému bodu WebDAV mimo slučky sa dôrazne odporúča ukončiť TLS (alebo smerovanie cez zabezpečený tunel, ako je Tailscale alebo Cloudflare tunel).
 
-Nesynchronizačné nástroje MCP vyžadujú pred načítaním tejto konfigurácie určenú identitu
-volajúceho. Volajúci bez identity dostane správu `Obsidian API token not configured`
-a do trezora sa neodošle žiadna požiadavka. Volajúci cez HTTP sa identifikujú pomocou
-svojich prihlasovacích údajov v požiadavke; volajúci cez stdio môžu použiť
-`OMNIROUTE_API_KEY` alebo `ROUTER_API_KEY`. Neidentifikovaný volajúci cez HTTP nemôže
-zdediť identitu prostredia servera. Samotné zástupné ID neoprávňujú na prístup; naďalej
-je podporovaný platný prihlasovací údaj prostredia, ktorý sa preloží na `env-key`.
-Autentifikované kľúče bez vlastnej konfigurácie služby Obsidian si zachovávajú možnosť
-použiť globálnu konfiguráciu. Štyri nástroje `obsidian_sync_*` si zachovávajú svoje
-samostatné správanie synchronizačného tokenu.
+### Zdroj kontextu pre kľúč API (voliteľné)
+
+Obsidian config môže byť rozsah** na kľúč API** cez tabuľku `api_key_context_sources` (`src/lib/db/apiKeyContextSources.ts`). Keď volanie MCP nesie overené ID kľúča API, `getObsidianConfigForApiKey()` uprednostňuje vlastné token/base-URL/vault-path (`source: "api_key"`) tohto kľúča a inak sa vráti späť do globálnej konfigurácie (`source: "global"`).
+
+Nástroje MCP bez synchronizácie vyžadujú pred načítaním tejto konfigurácie vyriešenú identitu volajúceho. Volajúci bez identity dostane `Obsidian API token not configured` a neodošle sa žiadna požiadavka na trezor. volajúci HTTP riešia prostredníctvom svojich poverení žiadosti; stdio volajúci môžu vyriešiť cez `OMNIROUTE_API_KEY` alebo `ROUTER_API_KEY`. Nevyriešený volajúci HTTP nemôže zdediť identitu prostredia servera. Samotný zástupný symbol IDs neoprávňuje prístup; platné poverenie prostredia, ktoré rieši `env-key` zostáva podporované. Overené kľúče bez konfigurácie Obsidian pre jednotlivé kľúče si zachovávajú globálnu rezervu. Štyri nástroje `obsidian_sync_*` si zachovávajú svoje samostatné správanie synchronizačného tokenu.
 
 ## Nástroje MCP (22)
 

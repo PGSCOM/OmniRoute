@@ -34,86 +34,65 @@ Klijent (`src/lib/obsidian/api.ts`) obavija Local REST API sljedećim mogućnost
 
 ## Postavljanje
 
-Ne postoji **varijabla okruženja** za Obsidian token ni osnovni URL — oboje se
-pohranjuje u SQLite tablici `key_value` (imenski prostor `obsidian`) putem
-`src/lib/db/obsidian.ts`. Token je **šifriran u mirovanju** (AES-256-GCM, uz
-rezervnu kompatibilnost s običnim tekstom). Konfigurirajte ga na kartici **Izvori konteksta**
-nadzorne ploče krajnje točke (`ObsidianSourceCard`) ili putem REST API-ja za postavke.
+Postoji** nema varijable okoline** za Obsidian token ili bazu URL — oba su pohranjena u SQLite `key_value` tablici (imenski prostor `obsidian`) preko `src/lib/db/obsidian.ts`. Token je** šifrirano u mirovanju** (AES-256-GCM, s otvorenim tekstom unatrag kompatibilnim rezervnim). Konfigurirajte iz** Izvori konteksta** karticu Endpoint nadzorne ploče (`ObsidianSourceCard`), ili putem postavki REST API.
 
 > [!IMPORTANT]
-> Dodatak **Obsidian Local REST API** mora biti instaliran i pokrenut. Njegovo REST
-> sučelje sluša na **HTTP `127.0.0.1:27123`** (zadani osnovni URL). Port `27124`
-> je _zasebna_ MCP/HTTPS krajnja točka i ruta postavki izričito ga odbija.
-> Ako se povezujete s drugog uređaja, upotrijebite `http://<tailscale-ip>:27123`.
+> The**Obsidian Lokalno REST API** dodatak mora biti instaliran i pokrenut. Njegovo REST sučelje sluša**HTTP `127.0.0.1:27123`** (zadana baza URL). Priključak `27124` je _odvojena_ MCP/HTTPS krajnja točka i izričito ga odbija ruta postavki. Ako se povezujete s drugog uređaja, koristite `http://<tailscale-ip>:27123`.
 
 ### Konfiguracijski ključevi (SQLite `key_value`, imenski prostor `obsidian`)
 
-| Ključ             | Svrha                                                        | Šifrirano |
-| ----------------- | ------------------------------------------------------------ | --------- |
-| `api_key`         | Bearer token lokalnog REST API-ja                            | da        |
-| `base_url`        | Osnovni REST URL (zadano `http://127.0.0.1:27123`)           | ne        |
-| `vault_path`      | Apsolutna putanja do direktorija trezora (za sinkronizaciju) | ne        |
-| `webdav_username` | Generirano WebDAV korisničko ime (sinkronizacija trezora)    | ne        |
-| `webdav_password` | Generirana WebDAV lozinka (sinkronizacija trezora)           | da        |
-| `webdav_enabled`  | Je li omogućena WebDAV sinkronizacija trezora                | ne        |
+| Ključ             | Svrha                                                     | Šifrirano |
+| ----------------- | --------------------------------------------------------- | --------- |
+| `api_key`         | Lokalni REST API token nositelja                          | Da        |
+| `base_url`        | REST baza URL (zadano `http://127.0.0.1:27123`)           | Ne        |
+| `vault_path`      | Apsolutni put do direktorija trezora (za sinkronizaciju)  | Ne        |
+| `webdav_username` | Generirano WebDAV korisničko ime (sinkronizacija trezora) | Ne        |
+| `webdav_password` | Generirana WebDAV lozinka (sinkronizacija trezora)        | Da        |
+| `webdav_enabled`  | Je li omogućena sinkronizacija WebDAV trezora             | Ne        |
 
-### Konfiguriranje putem REST-a
+### Konfigurirajte putem REST
 
 ```bash
-# Spremi i provjeri token lokalnog REST API-ja (POST provjerava putem provjere statusa)
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# Provjeri status veze (vraća connected, hasToken, baseUrl, vaultPath)
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# Prekini vezu (briše pohranjeni token)
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-Sve metode zahtijevaju autentifikaciju na nadzornoj ploči. `POST` odbija svaki URL na
-portu `27124` i provjerava token pozivanjem statusne krajnje točke lokalnog REST API-ja
-prije pohrane.
+Sve metode zahtijevaju provjeru autentičnosti nadzorne ploče. `POST` odbija bilo koji URL na portu `27124` i provjerava token pozivanjem lokalne krajnje točke REST API statusa prije ustrajanja.
 
 ### WebDAV sinkronizacija trezora
 
-`src/app/api/settings/obsidian/webdav/route.ts` upravlja neobaveznom sinkronizacijom
-trezora putem WebDAV-a (koju pokreće `src/lib/obsidianSync.ts`). Omogućavanjem se
-OmniRoute usmjerava na lokalni direktorij trezora te se generira nasumični par
-WebDAV korisničkog imena i lozinke:
+`src/app/api/settings/obsidian/webdav/route.ts` upravlja izbornom sinkronizacijom trezora podržanom WebDAV-om (koju pokreće `src/lib/obsidianSync.ts`). Omogućavanje usmjerava OmniRoute na lokalni direktorij trezora i kuje slučajni WebDAV username/password par:
 
 ```bash
-# Omogući WebDAV sinkronizaciju za direktorij trezora (generira korisničko ime/lozinku)
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# Dohvati status WebDAV sinkronizacije (vjerodajnice se vraćaju samo dok je omogućena)
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# Onemogući WebDAV sinkronizaciju (briše vjerodajnice i upravljani .stignore)
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
-### Izvor konteksta po API ključu (neobavezno)
+### Sigurnost i prijevoz
 
-Konfiguracija Obsidiana može se ograničiti **po API ključu** putem tablice
-`api_key_context_sources` (`src/lib/db/apiKeyContextSources.ts`). Kada MCP poziv sadrži
-ID autentificiranog API ključa, `getObsidianConfigForApiKey()` daje prednost vlastitom
-tokenu, osnovnom URL-u i putanji trezora tog ključa (`source: "api_key"`), a u suprotnom
-se vraća na globalnu konfiguraciju (`source: "global"`).
+WebDAV provjera autentičnosti nameće praćenje grešaka po IP-u i zaključavanje (10 neuspjelih pokušaja unutar prozora od 60 sekundi pokreće 5-minutno zaključavanje sa `429 Too Many Requests` i `Retry-After`). Budući da WebDAV prenosi osnovne vjerodajnice za provjeru autentičnosti, prekid TLS (ili usmjeravanje preko sigurnog tunela kao što je Tailscale ili Cloudflare tunel) snažno se preporučuje kada se pristupa WebDAV krajnjoj točki izvan povratne petlje.
 
-MCP alati koji nisu namijenjeni sinkronizaciji zahtijevaju razriješen identitet
-pozivatelja prije čitanja ove konfiguracije. Pozivatelj bez identiteta prima
-`Obsidian API token not configured` i ne šalje se nikakav zahtjev trezoru. HTTP
-pozivatelji razrješavaju identitet putem vjerodajnica svojeg zahtjeva; stdio
-pozivatelji mogu ga razriješiti putem `OMNIROUTE_API_KEY` ili `ROUTER_API_KEY`.
-Nerazriješeni HTTP pozivatelj ne može naslijediti identitet poslužiteljeva okruženja.
-Sami ID-jevi rezerviranih mjesta ne odobravaju pristup; valjana vjerodajnica okruženja
-koja se razrješava kao `env-key` i dalje je podržana. Autentificirani ključevi bez
-konfiguracije Obsidiana po ključu zadržavaju globalnu pričuvnu konfiguraciju. Četiri
-alata `obsidian_sync_*` zadržavaju svoje zasebno ponašanje tokena za sinkronizaciju.
+### Izvor konteksta po ključu API-ja (neobavezno)
+
+Obsidian konfiguracija može biti ograničena** po ključu API** preko `api_key_context_sources` tablice (`src/lib/db/apiKeyContextSources.ts`). Kada MCP poziv nosi autentificirani ID API ključa, `getObsidianConfigForApiKey()` preferira vlastiti token/base-URL/vault-path tog ključa (`source: "api_key"`) i inače se vraća na globalnu konfiguraciju (`source: "global"`).
+
+Nesinkronizirani MCP alati zahtijevaju razriješeni identitet pozivatelja prije čitanja ove konfiguracije. Pozivatelj bez identiteta prima `Obsidian API token not configured` i ne šalje se zahtjev za trezor. HTTP pozivatelji rješavaju putem svojih vjerodajnica zahtjeva; stdio pozivatelji mogu riješiti putem `OMNIROUTE_API_KEY` ili `ROUTER_API_KEY`. Nerazriješeni HTTP pozivatelj ne može naslijediti identitet okruženja poslužitelja. Sam rezervirano mjesto IDs ne autorizira pristup; valjana vjerodajnica okruženja koja se razrješava na `env-key` ostaje podržana. Autentificirani ključevi bez Obsidian konfiguracije po ključu zadržavaju globalnu zamjenu. Četiri `obsidian_sync_*` alata zadržavaju svoje odvojeno ponašanje sinkronizirajućeg tokena.
 
 ## MCP alati (22)
 

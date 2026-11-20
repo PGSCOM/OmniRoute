@@ -208,7 +208,7 @@
 
 ## API参考
 
-`/api/services/`下的所有路线都是**LOCAL_ONLY** （仅环回，硬性规则#17）。无论身份验证令牌如何，非环回请求都会接收`403 LOCAL_ONLY` 。
+`/api/services/`下的所有路线都是**LOCAL_ONLY** （仅环回，硬规则#17）。无论身份验证令牌如何，非环回请求都会接收`403 LOCAL_ONLY` 。
 
 ### 4.1 9个路由器端点（11条路由）
 
@@ -224,7 +224,7 @@
 
 | 场地      | 类型     | 默认       | 描述                           |
 | --------- | -------- | ---------- | ------------------------------ |
-| `version` | `string` | `"latest"` | 要安装的 npm 版本标签或 semver |
+| `version` | `string` | `"latest"` | 要安装的 npm 版本标记或 semver |
 
 **回应：**
 
@@ -235,7 +235,7 @@
 | `409` | 已安装（已锁定）                                       |
 | `500` | npm 安装失败—查看`message`是否有友好错误               |
 
-**笔记：**使用`execFile('npm', [...])` —无 shell，无插值（硬规则#13）。 EACCES错误以友好消息的形式出现。
+**笔记：**使用`execFile('npm', [...])` —无外壳，无插值（硬规则#13）。 EACCES错误以友好消息的形式出现。
 
 ---
 
@@ -514,13 +514,13 @@ LLMLingua是一个封装`@atjsh/llmlingua-2`提示压缩 sidecar（真正的ONNX
 
 **边车合约：**服务器脚本公开`GET /health` （即时—不等待模型）和`POST /compress` (`{ text, rate }` → `{ text, compressed, ratio }`)。该模型在第一次`/compress`调用时延迟加载。
 
-**压缩接线：** `open-sse/services/compression/engines/llmlingua/index.ts`的`httpSidecarBackend`调用`LLMLINGUA_BASE_URL` （默认`http://127.0.0.1:20135`），并且仅在严格短于输入时接受 sidecar 的响应；任何失败（未运行、超时、无操作响应）都会回退到进程内工作线程后端 (`./worker.ts`)。
+**压缩接线：** `open-sse/services/compression/engines/llmlingua/index.ts`的`httpSidecarBackend`调用`LLMLINGUA_BASE_URL` （默认`http://127.0.0.1:20135`），并且仅在严格短于输入时才接受 sidecar 的响应；任何失败（未运行、超时、无操作响应）都会回退到进程内工作线程后端 (`./worker.ts`)。
 
 ---
 
 ### 4.8 个单盒端点（8 个路由）
 
-sing-box 具有与 Mux —相同的端点形状，没有`rotate-key`路由，没有API密钥注入（ `bootstrap.ts`中的`needsApiKey: false` ）。它仅受生命周期管理：从来不是routing/LLM提供者。 `install()`下载固定版本（ `src/lib/services/installers/singbox.ts`中的`SINGBOX_PINNED_VERSION` ）的官方GitHub发行二进制文件（`SagerNet/sing-box`），并在将其写入磁盘之前，根据烘焙到同一文件中的校验和验证其SHA256 —任何其他请求的版本都会被拒绝。
+sing-box 具有与 Mux —相同的端点形状，没有`rotate-key`路由，没有API密钥注入（ `bootstrap.ts`中的`needsApiKey: false` ）。它仅受生命周期管理：绝不是routing/LLM提供者。 `install()`下载固定版本（ `src/lib/services/installers/singbox.ts`中的`SINGBOX_PINNED_VERSION` ）的官方GitHub发行二进制文件（`SagerNet/sing-box`），并在将其写入磁盘之前，根据烘焙到同一文件中的校验和验证其SHA256 —任何其他请求的版本都会被拒绝。
 
 | 方法   | 小路                                         | 描述                                          |
 | ------ | -------------------------------------------- | --------------------------------------------- |
@@ -554,7 +554,7 @@ GET|POST|... /dashboard/providers/services/9router/embed/[...path]
 - 从响应中删除`set-cookie`、 `content-security-policy`、 `x-frame-options`、 `cross-origin-*`
 - 重写HTML响应以注入`<base href>`并规范化绝对路径 (`/foo` → `/dashboard/.../embed/foo`)
 
-嵌入式仪表板的WebSocket升级由专用端口上的配套服务器处理（请参阅`src/lib/services/embedWsProxy.ts`）。
+嵌入式仪表板的WebSocket升级由专用端口上的配套服务器处理（请参阅`src/lib/services/embedWsProxy.ts`）。每次升级都会在隧道打开之前获得授权，规则与HTTP嵌入路由相同：对等点必须是环回且没有反向代理转发标头，浏览器`Origin`必须是仪表板源（`LIVE_WS_ALLOWED_ORIGINS` / `LIVE_WS_ALLOWED_HOSTS`扩展环回默认值），并且调用者需要仪表板会话或管理范围API密钥，除非禁用仪表板登录。
 
 **安全：**嵌入代理路由属于`LOCAL_ONLY_API_PREFIXES` ，只能从环回到达。通过Cloudflare/Ngrok隧道获取JWT的攻击者无法代理到嵌入式服务。
 

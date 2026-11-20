@@ -33,84 +33,67 @@ OmniRoute は、**Obsidian** Vault を**コンテキストソース**として�
 - スペースやスラッシュを含むノートパスを安全に扱うための、Vault 相対の
   **パスエンコーディング**。
 
-## セットアップ
+## 設定
 
-Obsidian のトークンまたはベース URL 用の**環境変数はありません**。どちらも
-`src/lib/db/obsidian.ts` を介して SQLite の `key_value` テーブル（名前空間 `obsidian`）に
-保存されます。トークンは**保存時に暗号化**されます（AES-256-GCM、平文への後方互換フォールバックあり）。
-Endpoint ダッシュボードの **Context Sources** タブ（`ObsidianSourceCard`）または
-設定 REST API から構成してください。
+がある**環境変数がありません**ObsidianトークンまたはベースURL —の場合、両方とも`src/lib/db/obsidian.ts`を介してSQLite `key_value`テーブル (名前空間`obsidian`) に保存されます。トークンは**保存時に暗号化される**(AES-256-GCM、平文の下位互換フォールバックを使用)。から設定します**コンテキストソース**エンドポイント ダッシュボードのタブ (`ObsidianSourceCard`)、または設定REST APIを使用します。
 
 > [!IMPORTANT]
-> **Obsidian Local REST API** プラグインをインストールし、実行しておく必要があります。その REST
-> インターフェースは **HTTP `127.0.0.1:27123`**（デフォルトのベース URL）でリッスンします。ポート `27124`
-> は_別の_ MCP/HTTPS エンドポイントであり、設定ルートによって明示的に拒否されます。
-> 別のデバイスから接続する場合は、`http://<tailscale-ip>:27123` を使用してください。
+> の**ObsidianローカルREST API**プラグインがインストールされ、実行されている必要があります。そのRESTインターフェイスはリッスンします**HTTP `127.0.0.1:27123`** (デフォルトのベースURL)。ポート`27124`は _dependent_ MCP/HTTPSエンドポイントであり、設定ルートによって明示的に拒否されます。別のデバイスから接続する場合は、 `http://<tailscale-ip>:27123`を使用します。
 
-### 構成キー（SQLite `key_value`、名前空間 `obsidian`）
+### 構成キー (SQLite `key_value`、名前空間`obsidian`)
 
-| キー              | 用途                                                   | 暗号化 |
-| ----------------- | ------------------------------------------------------ | ------ |
-| `api_key`         | Local REST API の bearer トークン                      | はい   |
-| `base_url`        | REST ベース URL（デフォルト `http://127.0.0.1:27123`） | いいえ |
-| `vault_path`      | vault ディレクトリへの絶対パス（同期用）               | いいえ |
-| `webdav_username` | 生成された WebDAV ユーザー名（vault 同期）             | いいえ |
-| `webdav_password` | 生成された WebDAV パスワード（vault 同期）             | はい   |
-| `webdav_enabled`  | WebDAV vault 同期が有効かどうか                        | いいえ |
+| 鍵                | 目的                                               | 暗号化された |
+| ----------------- | -------------------------------------------------- | ------------ |
+| `api_key`         | ローカルREST APIベアラー トークン                  | はい         |
+| `base_url`        | RESTベースURL (デフォルト`http://127.0.0.1:27123`) | いいえ       |
+| `vault_path`      | ボールト ディレクトリへの絶対パス (同期用)         | いいえ       |
+| `webdav_username` | 生成されたWebDAVユーザー名 (ボールト同期)          | いいえ       |
+| `webdav_password` | 生成されたWebDAVパスワード (ボールト同期)          | はい         |
+| `webdav_enabled`  | WebDAVボールト同期が有効かどうか                   | いいえ       |
 
-### REST 経由で構成
+### REST経由で設定する
 
 ```bash
-# Local REST API トークンを保存して検証（POST はステータスチェックを通じて検証）
+# Save + validate the Local REST API token (POST validates via a status check)
 curl -X POST http://localhost:20128/api/settings/obsidian \
   -H "Content-Type: application/json" \
   -d '{"token":"<obsidian-rest-api-key>","baseUrl":"http://127.0.0.1:27123"}'
 
-# 接続ステータスを確認（connected、hasToken、baseUrl、vaultPath を返す）
+# Check connection status (returns connected, hasToken, baseUrl, vaultPath)
 curl http://localhost:20128/api/settings/obsidian
 
-# 切断（保存されたトークンを削除）
+# Disconnect (clears the stored token)
 curl -X DELETE http://localhost:20128/api/settings/obsidian
 ```
 
-すべてのメソッドでダッシュボード認証が必要です。`POST` はポート `27124` の URL を拒否し、
-永続化する前に Local REST API のステータスエンドポイントを呼び出してトークンを検証します。
+すべての方法でダッシュボード認証が必要です。 `POST`ポート`27124`上のすべてのURL拒否し、永続化する前にローカルREST APIステータス エンドポイントを呼び出してトークンを検証します。
 
-### WebDAV vault 同期
+### WebDAVボールト同期
 
-`src/app/api/settings/obsidian/webdav/route.ts` は、オプションの WebDAV バックエンドによる
-vault 同期（`src/lib/obsidianSync.ts` によって駆動）を管理します。有効にすると、OmniRoute が
-ローカルの vault ディレクトリを参照するようになり、ランダムな WebDAV ユーザー名とパスワードのペアが生成されます。
+`src/app/api/settings/obsidian/webdav/route.ts`オプションの WebDAV ベースのボールト同期 ( `src/lib/obsidianSync.ts`によって駆動) を管理します。これを有効にすると、 OmniRouteローカル Vault ディレクトリをポイントし、ランダムなWebDAV username/passwordペアが作成されます。
 
 ```bash
-# vault ディレクトリの WebDAV 同期を有効化（ユーザー名/パスワードを生成）
+# Enable WebDAV sync for a vault directory (mints username/password)
 curl -X POST http://localhost:20128/api/settings/obsidian/webdav \
   -H "Content-Type: application/json" \
   -d '{"vaultPath":"/home/me/MyVault"}'
 
-# WebDAV 同期ステータスを取得（資格情報は有効な間のみ返される）
+# Get WebDAV sync status (credentials returned only while enabled)
 curl http://localhost:20128/api/settings/obsidian/webdav
 
-# WebDAV 同期を無効化（資格情報と管理対象の .stignore を削除）
+# Disable WebDAV sync (clears credentials + managed .stignore)
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
-### API キーごとのコンテキストソース（オプション）
+### セキュリティと輸送
 
-Obsidian の構成は、`api_key_context_sources` テーブル
-（`src/lib/db/apiKeyContextSources.ts`）を介して **API キーごと**にスコープ設定できます。
-MCP 呼び出しに認証済み API キー ID が含まれている場合、`getObsidianConfigForApiKey()` は
-そのキー独自のトークン/ベース URL/vault パス（`source: "api_key"`）を優先し、それ以外の場合は
-グローバル構成（`source: "global"`）へフォールバックします。
+WebDAV認証は、IP ごとの障害追跡とロックアウトを強制します (60 秒以内に試行が 10 回失敗すると、 `429 Too Many Requests`および`Retry-After`では 5 分間のロックアウトがトリガーされます)。 WebDAV基本認証資格情報を送信するため、ループバックの外側でWebDAVエンドポイントにアクセスする場合は、 TLS終了する (またはTailscaleまたはCloudflareトンネルなどの安全なトンネル経由でルーティングする) ことを強くお勧めします。
 
-同期以外の MCP ツールでは、この構成を読み取る前に呼び出し元の ID を解決する必要があります。
-ID を持たない呼び出し元には `Obsidian API token not configured` が返され、vault へのリクエストは
-送信されません。HTTP の呼び出し元はリクエストの資格情報を通じて解決され、stdio の呼び出し元は
-`OMNIROUTE_API_KEY` または `ROUTER_API_KEY` を通じて解決できます。解決されていない HTTP の呼び出し元は、
-サーバーの環境 ID を継承できません。プレースホルダー ID だけではアクセスは許可されませんが、
-`env-key` に解決される有効な環境資格情報は引き続きサポートされます。API キーごとの Obsidian 構成を
-持たない認証済みキーでは、グローバル構成へのフォールバックが維持されます。4 つの
-`obsidian_sync_*` ツールでは、個別の同期トークン動作が維持されます。
+### API キーごとのコンテキスト ソース (オプション)
+
+Obsidian config はスコープ指定可能**APIキーごと**`api_key_context_sources`テーブル (`src/lib/db/apiKeyContextSources.ts`) 経由。 MCP呼び出しが認証されたAPIキー ID を運ぶ場合、 `getObsidianConfigForApiKey()`そのキー自身のtoken/base-URL/vault-path (`source: "api_key"`) を優先し、それ以外の場合はグローバル構成 (`source: "global"`) にフォールバックします。
+
+非同期MCPツールでは、この構成を読み取る前に解決された呼び出し元 ID が必要です。 ID のない呼び出し元は`Obsidian API token not configured`を受信し、ボールト要求は送信されません。 HTTP呼び出し元は、要求資格情報を通じて解決します。 stdio 呼び出し元は、 `OMNIROUTE_API_KEY`または`ROUTER_API_KEY`を通じて解決できます。未解決のHTTP呼び出し元はサーバーの環境 ID を継承できません。プレースホルダーIDsだけではアクセスは許可されません。 `env-key`に解決される有効な環境認証情報は引き続きサポートされます。キーごとのObsidian構成を持たない認証済みキーは、グローバル フォールバックを保持します。 4 つの`obsidian_sync_*`ツールは、個別の同期トークンの動作を維持します。
 
 ## MCP ツール（22）
 
